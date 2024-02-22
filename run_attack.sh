@@ -1,0 +1,1 @@
+python main_attack.py --attack_type 0  --choice 0
