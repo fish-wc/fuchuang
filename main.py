@@ -8,6 +8,9 @@ from xor_and_ndb import xor,ndb
 from weight_share_protect.matrix_add_mul_sort_transform_using_different_key import matrix_add_mul_sort
 from pputl_demo.target_model import *
 warnings.filterwarnings("ignore", category=UserWarning)
+
+# 修改了
+
 if __name__ == '__main__':
 
 	#预置超参数
