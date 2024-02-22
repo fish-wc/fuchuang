@@ -4,7 +4,7 @@ import datasets2
 from differential_privacy.differential_privacy_client import *
 import random
 from homomorphic_encryption.homomorphic_encryption_client import *
-from backdoor_attack.backdoor_attcak_client import *
+
 from xor_and_ndb.xndb_client import *
 from pputl_demo.pputl_client import *
 from weight_share_protect.User_UDK import *
