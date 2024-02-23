@@ -1,48 +1,34 @@
-from flask import Flask, request, jsonify, render_template, Response
+from flask import Flask, request, Response, render_template
 from flask_socketio import SocketIO, emit
-from flask import Flask, jsonify, stream_with_context
 import subprocess
-import threading
-import queue
 
 app = Flask(__name__)
-# socketio = SocketIO(app)
-#
-# # 创建一个队列来存储子进程的输出
-# output_queue = queue.Queue()
-#
-#
-# def capture_output(process):
-#     """捕获子进程的输出并将其放入队列中"""
-#     for line in iter(process.stdout.readline, b''):
-#         output_queue.put(line.decode('utf-8').rstrip())
+socketio = SocketIO(app,cors_allowed_origins="*")
 
+@app.route('/')
+def index():
+    return render_template('index.html')
 
-@app.route('/attack', methods=['POST'])
-def attack():
-    data = request.form
+@socketio.on('attack')
+def attack(data):
     attack_type = data['attack_type']
     choice = data['choice']
 
     # 构建攻击命令
     command = f"python main_attack.py --attack_type {attack_type} --choice {choice}"
 
-    # 执行攻击命令，并捕获输出
-    completed_process = subprocess.run(command.split(), capture_output=True, text=True, check=True)
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding='utf-8')
 
-    # 输出子进程的标准输出和标准错误
-    app.logger.info("Attack Command Output:")
-    app.logger.info(completed_process.stdout)
-    app.logger.error("Attack Command Error Output:")
-    app.logger.error(completed_process.stderr)
-
-    return jsonify({'message': 'Attack command executed successfully'}), 200
+    for line in process.stdout:
+        emit('attack_output', {'output': line.strip()})
 
 
-@app.route('/train', methods=['POST'])
-def train():
-    data = request.form
+@socketio.on('train')
+def train(data):
     choice = data['choice']
+
+    print(choice)
+
     command = f"python main.py --choice {choice}"
 
     # 根据前端传递的参数来决定是否将其添加到命令中
@@ -134,37 +120,11 @@ def train():
         root_value = data['root']
         command += f" --root {root_value}"
 
-    # command += f" > output.log 2>&1 &"
-
-    # 清空output.log文件
-    # with open('output.log', 'w') as f:
-    #     f.truncate(0)  # 清空文件内容
-
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding='utf-8')
 
-    #
-    # # 使用线程来异步捕获输出，这样不会阻塞Flask的主线程
-    # threading.Thread(target=capture_output, args=(process,)).start()
-    #
-    # # 使用生成器函数来流式传输输出到前端
-    # def generate():
-    #     while not output_queue.empty():
-    #         yield output_queue.get() + '\n'
-    #
-    # # 实时打印 main.py 的输出到 Flask 应用的控制台
-    # for line in iter(process.stdout.readline, b''):
-    #     print(line.strip())  # 输出每一行，可根据需要进行格式化
-    #
-    # process.wait()
-    #
-    # return stream_with_context(generate())
-
-    def generate_output():
-        for line in process.stdout:
-            yield line.strip() + '\n'
-
-    return Response(generate_output(), mimetype='text/plain')
+    for line in process.stdout:
+        emit('train_output', {'output': line.strip()})
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    socketio.run(app, debug=True, allow_unsafe_werkzeug=True)
