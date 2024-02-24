@@ -12,7 +12,8 @@ def index():
 
 
 @socketio.on('attack')
-def attack(data):
+def attack(data_1):
+    data = data_1['params']
     attack_type = data['attack_type']
     choice = data['choice']
 
@@ -26,10 +27,11 @@ def attack(data):
 
 
 @socketio.on('train')
-def train(data):
-    choice = data['choice']
+def train(data_1):
 
-    print(choice)
+    print(data_1)
+    data = data_1['params']
+    choice = data['choice']
 
     command = f"python main.py --choice {choice}"
 
@@ -124,9 +126,22 @@ def train(data):
 
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding='utf-8')
 
+    print(data)
     for line in process.stdout:
         emit('train_output', {'output': line.strip()})
 
+    # 从文件中读取acc和loss数据
+    with open('acc.txt', 'r') as f:
+        acc_data = f.read()
+
+    with open('loss.txt', 'r') as f:
+        loss_data = f.read()
+
+    # 准备要传递的数据字典
+    data = {'acc': acc_data, 'loss': loss_data}
+    emit('train_result',data)
+
+
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True, allow_unsafe_werkzeug=True)
+    socketio.run(app, debug=True, allow_unsafe_werkzeug=True, port=8080)
