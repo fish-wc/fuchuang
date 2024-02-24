@@ -47,6 +47,7 @@ if __name__ == '__main__':
 	# with open(args.conf, 'r') as f:
 	# 	conf = json.load(f)
 	#选择保护算法
+	# 改进的生成
 	print("正常模式输入0；差分隐私输入1；同态加密输入2:负数据库输入3;改进的生成对抗网络输入4;共享权重模式协作学习输入5:")
 	choice = args.choice
 	conf = {"choice":args.choice,"no_models":args.no_models,"model_name":args.model_name,"type":args.type,"global_epochs":args.global_epochs,
