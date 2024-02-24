@@ -71,7 +71,15 @@ if __name__ == '__main__':
 		trainer.weight_share_protect_train()
 	else:
 		trainer.homomorphic_encryption_train()
-	acc_loss(trainer.accs,trainer.losses)
+
+	with open('acc.txt', 'w') as f:
+		json.dump(trainer.accs, f)
+
+	with open('loss.txt', 'w') as f:
+		json.dump(trainer.losses, f)
+
+	print(trainer.accs,trainer.losses)
+	# acc_loss(trainer.accs,trainer.losses)
 
 
 
