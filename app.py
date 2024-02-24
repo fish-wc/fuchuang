@@ -3,11 +3,13 @@ from flask_socketio import SocketIO, emit
 import subprocess
 
 app = Flask(__name__)
-socketio = SocketIO(app,cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*")
+
 
 @app.route('/')
 def index():
     return render_template('index.html')
+
 
 @socketio.on('attack')
 def attack(data):
