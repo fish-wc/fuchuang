@@ -13,13 +13,13 @@ class Differential_Privacy_Client(object):
 		self.client_id = id
 		
 		self.train_dataset = train_dataset
-		self.mask = {}
-		for name, param in self.local_model.state_dict().items():
-			p = torch.ones_like(param) * self.conf["prop"]
-			if torch.is_floating_point(param):
-				self.mask[name] = torch.bernoulli(p)
-			else:
-				self.mask[name] = torch.bernoulli(p).long()
+		# self.mask = {}
+		# for name, param in self.local_model.state_dict().items():
+		# 	p = torch.ones_like(param) * self.conf["prop"]
+		# 	if torch.is_floating_point(param):
+		# 		self.mask[name] = torch.bernoulli(p)
+		# 	else:
+		# 		self.mask[name] = torch.bernoulli(p).long()
 
 		all_range = list(range(len(self.train_dataset)))
 		data_len = int(len(self.train_dataset) / self.conf['no_models'])
@@ -78,10 +78,7 @@ class Differential_Privacy_Client(object):
 		diff = dict()
 		for name, data in self.local_model.state_dict().items():
 			diff[name] = (data - model.state_dict()[name])
-			diff[name] = diff[name] * self.mask[name]
-			
-		#print("\n\nfinishing local model training ... ... ")
-		#for name, layer in self.local_model.named_parameters():
-		#	print(name, "->", torch.mean(layer.data))
+		# print(diff[name])
+
 		return diff
 		
