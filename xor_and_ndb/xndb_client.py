@@ -17,13 +17,13 @@ class XNDB_Client(object):
         # Check GPU availability and move the model to GPU if available
         # if torch.cuda.is_available():
         # 	self.local_model = self.local_model.cuda()
-        self.mask = {}
-        for name, param in self.local_model.state_dict().items():
-            p = torch.ones_like(param) * self.conf["prop"]
-            if torch.is_floating_point(param):
-                self.mask[name] = torch.bernoulli(p)
-            else:
-                self.mask[name] = torch.bernoulli(p).long()
+        # self.mask = {}
+        # for name, param in self.local_model.state_dict().items():
+        #     p = torch.ones_like(param) * self.conf["prop"]
+        #     if torch.is_floating_point(param):
+        #         self.mask[name] = torch.bernoulli(p)
+        #     else:
+        #         self.mask[name] = torch.bernoulli(p).long()
 
         self.client_id = id
 
@@ -65,8 +65,7 @@ class XNDB_Client(object):
             scheduler.step()
         diff = dict()
         for name, data in self.local_model.state_dict().items():
-            diff[name] = (data - model.state_dict()[name])
-            diff[name] = diff[name] * self.mask[name]
-        # print(diff[name])
+			diff[name] = (data - model.state_dict()[name])
+		# print(diff[name])
 
-        return diff
+		return diff
