@@ -28,7 +28,6 @@ def attack(data_1):
 
 @socketio.on('train')
 def train(data_1):
-
     print(data_1)
     data = data_1['params']
     choice = data['choice']
@@ -139,9 +138,8 @@ def train(data_1):
 
     # 准备要传递的数据字典
     data = {'acc': acc_data, 'loss': loss_data}
-    emit('train_result',data)
-
+    emit('train_result', data)
 
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True, allow_unsafe_werkzeug=True, port=8080)
+    socketio.run(app, debug=True, allow_unsafe_werkzeug=True, port=3000)

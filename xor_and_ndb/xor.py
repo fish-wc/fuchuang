@@ -74,7 +74,7 @@ def xor_dataset(dataset, xor_key):
 
 def XOR():
     # 加载CIFAR-10数据集
-    trainset, eval_datasets = datasets2.get_dataset("data/", 'cifar',subset_size= 10000)#这里
+    trainset, eval_datasets = datasets2.get_dataset("data/", 'cifar',subset_size= 100)#这里
     # 获取 trainset 的索引
     subset_indices = trainset.indices
 

@@ -5,17 +5,18 @@ from inversion_attack.inversion_attack_model import Classifier, Inversion
 import torchvision.utils as vutils
 from xor_and_ndb import XOR_pre
 from weight_share_protect.Mydataset_for_numpy_client_UDK import *
+
 # Training settings
 batch_size = 256
 test_batch_size = 1000
-epochs = 1#10
+epochs = 1  # 10
 lr = 0.1  # Learning rate
 momentum = 0.5
 no_cuda = False
 seed = 1
 log_interval = 10
 nc = 3  # Number of channels
-ndf = 256 # Number of discriminator filters
+ndf = 256  # Number of discriminator filters
 ngf = 512  # Number of generator filters
 nz = 10  # Size of the latent Z vector
 truncation = 5
@@ -23,7 +24,7 @@ c = 50.0  # A constant for adjustment, could be used for any purpose in the mode
 num_workers = 8
 
 
-def train(classifier, inversion, log_interval, device, data_loader, optimizer, epoch,choice):
+def train(classifier, inversion, log_interval, device, data_loader, optimizer, epoch, choice):
     classifier.eval()
     inversion.train()
 
@@ -41,10 +42,11 @@ def train(classifier, inversion, log_interval, device, data_loader, optimizer, e
         optimizer.step()
 
         if batch_idx % log_interval == 0:
-            print('Train Epoch: {} [{}/{}]\tLoss: {:.6f}'.format( epoch, batch_idx * len(data),
-                                                                  len(data_loader.dataset), loss.item()))
+            print('Train Epoch: {} [{}/{}]\tLoss: {:.6f}'.format(epoch, batch_idx * len(data),
+                                                                 len(data_loader.dataset), loss.item()))
 
-def test(classifier, inversion, device, data_loader, epoch, msg,result_path,choice):
+
+def test(classifier, inversion, device, data_loader, epoch, msg, result_path, choice):
     classifier.eval()
     inversion.eval()
     mse_loss = 0
@@ -67,8 +69,9 @@ def test(classifier, inversion, device, data_loader, epoch, msg,result_path,choi
                 # 交替排列真实图像和重构图像
                 out = torch.cat((inverse, truth), dim=0)
                 # # 保存对比图像，不需要对i进行迭代
-                #路径
-                vutils.save_image(out, '{}out/recon_{}_{}.png'.format(result_path,msg.replace(" ", ""), epoch), nrow=num_images,
+                # 路径
+                vutils.save_image(out, '{}out/recon_{}_{}.png'.format(result_path, msg.replace(" ", ""), epoch),
+                                  nrow=num_images,
                                   normalize=True)
                 plot = False
 
@@ -76,9 +79,10 @@ def test(classifier, inversion, device, data_loader, epoch, msg,result_path,choi
     print('\nTest inversion model on {} set: Average MSE loss: {:.6f}\n'.format(msg, mse_loss))
     return mse_loss
 
-def inversion_model_train(result_path,choice=None):
-    #路径
-    os.makedirs(result_path+'out', exist_ok=True)
+
+def inversion_model_train(result_path, choice=None):
+    # 路径
+    os.makedirs(result_path + 'out', exist_ok=True)
 
     use_cuda = not no_cuda and torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
@@ -118,15 +122,12 @@ def inversion_model_train(result_path,choice=None):
         train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True, **kwargs)
         test1_loader = torch.utils.data.DataLoader(eval_dataset, batch_size=test_batch_size, shuffle=False, **kwargs)
 
-
-
-
     classifier = nn.DataParallel(Classifier(nc=nc, ndf=ndf, nz=nz)).to(device)
     inversion = nn.DataParallel(Inversion(nc=nc, ngf=ngf, nz=nz, truncation=truncation, c=c)).to(device)
     optimizer = optim.Adam(inversion.parameters(), lr=0.0002, betas=(0.5, 0.999), amsgrad=True)
 
     # 路径Load classifier
-    path = result_path+'out/classifier.pth'
+    path = result_path + 'out/classifier.pth'
     try:
         checkpoint = torch.load(path)
         classifier.load_state_dict(checkpoint['model'])
@@ -140,8 +141,8 @@ def inversion_model_train(result_path,choice=None):
     # Train inversion model
     best_recon_loss = 99999999
     for epoch in range(1, epochs + 1):
-        train(classifier, inversion, log_interval, device, train_loader, optimizer, epoch,choice)
-        recon_loss = test(classifier, inversion, device, test1_loader, epoch, 'test',result_path,choice)
+        train(classifier, inversion, log_interval, device, train_loader, optimizer, epoch, choice)
+        recon_loss = test(classifier, inversion, device, test1_loader, epoch, 'test', result_path, choice)
 
         if recon_loss < best_recon_loss:
             best_recon_loss = recon_loss
@@ -151,12 +152,10 @@ def inversion_model_train(result_path,choice=None):
                 'optimizer': optimizer.state_dict(),
                 'best_recon_loss': best_recon_loss
             }
-            #路径
-            torch.save(state, result_path+'out/inversion.pth')
-            shutil.copyfile(result_path+'out/recon_test_{}.png'.format(epoch), result_path+'out/best_test.png')
+            # 路径
+            torch.save(state, result_path + 'out/inversion.pth')
+            shutil.copyfile(result_path + 'out/recon_test_{}.png'.format(epoch), result_path + 'out/best_test.png')
 
     for i in range(1, epochs + 1):
-        #路径
+        # 路径
         os.remove(f'{result_path}out/recon_test_{i}.png')
-
-

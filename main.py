@@ -1,3 +1,5 @@
+import sys
+
 from trainer import *
 import json
 import argparse
@@ -18,7 +20,7 @@ if __name__ == '__main__':
 	parser.add_argument('--no_models', type=int, default=5, help='clients_num')
 	parser.add_argument('--model_name', type=str, default="resnet50",help='model')
 	parser.add_argument('--type', type=str, default="cifar", help='dataset_name')
-	parser.add_argument('--global_epochs', type=int, default=5, help='global_epochs')
+	parser.add_argument('--global_epochs', type=int, default=1, help='global_epochs')
 	parser.add_argument('--local_epochs', type=int, default=1, help='local_epochs')
 	parser.add_argument('--k', type=int, default=3, help='train_clients_num')
 	parser.add_argument('--batch_size', type=int, default=100, help='batch_size')
@@ -59,10 +61,19 @@ if __name__ == '__main__':
 		trainer.differential_privacy_train()
 	elif choice==3:
 		#以下两步数据转换
-		xor.XOR()
-		ndb.NDB_f()
+		# xor.XOR()
+		# ndb.NDB_f()
 		trainer.xndb_train()
-	elif choice==4:
+	# elif choice == 4:
+	# 	save_path = f'pputl_demo/G_path/trained_generator_G_{conf["batch_size"]}.pth'
+	# 	if os.path.exists(save_path):
+	# 		G = Generator64().to(device)
+	# 		G.load_state_dict(torch.load(save_path))
+	# 	else:
+	# 		G = pputl.PPUTL(conf["batch_size"])
+	# 	G.eval()
+	# 	trainer.pputl_client_train(G)
+	elif choice == 4:
 		G = pputl.PPUTL(conf["batch_size"])
 		G.eval()
 		trainer.pputl_client_train(G)
@@ -71,7 +82,15 @@ if __name__ == '__main__':
 		trainer.weight_share_protect_train()
 	else:
 		trainer.homomorphic_encryption_train()
-	acc_loss(trainer.accs,trainer.losses)
+
+	with open('acc.txt', 'w') as f:
+		f.write(str(trainer.accs))
+
+	with open('loss.txt', 'w') as f:
+		f.write(str(trainer.losses))
+
+	print(trainer.accs,trainer.losses)
+	# acc_loss(trainer.accs,trainer.losses)
 
 
 
