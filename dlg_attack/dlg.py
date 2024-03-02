@@ -63,6 +63,9 @@ def dlg_attack_no_noisy():
         # ========================================================================================================================
         for batchidx, (x, label) in enumerate(cifar_train):
 
+            if batchidx > 10:
+                break
+
 
             x, label = x.to(device), label.to(device)
 

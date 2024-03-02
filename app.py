@@ -1,4 +1,6 @@
 import json
+import os
+import time
 
 from flask import Flask, request, Response, render_template
 from flask_socketio import SocketIO, emit
@@ -11,6 +13,12 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 @app.route('/')
 def index():
     return render_template('index.html')
+
+
+import subprocess
+import os
+import json
+from flask_socketio import emit
 
 
 @socketio.on('attack')
@@ -26,6 +34,41 @@ def attack(data_1):
 
     for line in process.stdout:
         emit('attack_output', {'output': line.strip()})
+
+    # 等待1分钟
+    time.sleep(60)
+
+    # 终止子进程
+    process.terminate()
+
+    result = {}
+
+    if attack_type == 0:
+        # 读取指定文件夹下的所有 PNG 文件并添加到 pic 列表中
+        pic_folder = r'C:\Users\Zherui\Desktop\fuchuang\dlg_attack\no_noisy_dlg_attack'  # 指定文件夹路径
+        pic_files = [os.path.join(pic_folder, f) for f in os.listdir(pic_folder) if f.endswith('.png')][:10]
+        result['pic'] = pic_files
+    elif attack_type == 1:
+        # 读取指定地址下的 TXT 文件并解析分类报告信息
+        txt_file = r'C:\Users\Zherui\Desktop\fuchuang\ml_attack\mla_result\classification_report1.txt'  # 指定 txt 文件路径
+        with open(txt_file, 'r') as f:
+            lines = f.readlines()
+
+        metrics = {}
+        labels = ['precision', 'recall', 'f1-score', 'support']
+        for line in lines[2:4]:  # 跳过前两行
+            values = line.split()
+            label = values[0]
+            metrics[label] = {k: float(v) for k, v in zip(labels, values[1:])}
+
+        result['metrics'] = metrics
+    elif attack_type == 2:
+        # 将指定图片添加到 pic 列表中
+        pic_file = r'C:\Users\Zherui\Desktop\fuchuang\inversion_attack\norm_attack_out\best_test.png'
+        result['pic'] = [pic_file]
+
+    # 将数据以 JSON 格式通过 emit 发送给前端
+    emit('attack_result', result)
 
 
 @socketio.on('train')

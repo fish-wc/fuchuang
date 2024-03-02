@@ -141,6 +141,8 @@ def inversion_model_train(result_path,choice=None):
     best_recon_loss = 99999999
     #==========================================================================================================
     for epoch in range(1, epochs + 1):
+        if epoch > 10:
+            break
         train(classifier, inversion, log_interval, device, train_loader, optimizer, epoch,choice)
         recon_loss = test(classifier, inversion, device, test1_loader, epoch, 'test',result_path,choice)
 
