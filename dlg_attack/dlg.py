@@ -562,7 +562,7 @@ def dlg_attack_xor_and_ndb():
 
     learn_rate = 1.0
     num_dummy = 1
-    Iteration = 500
+    Iteration = 50
     num_exp = 1  # 500
     transform_train = transform=transforms.Compose([
         transforms.RandomCrop(32, padding=4),
@@ -768,7 +768,7 @@ def dlg_attack_pputl(G):
 
     learn_rate = 1.0
     num_dummy = 1
-    Iteration = 500
+    Iteration = 50
     num_exp = 1  # 500
 
     cifar_train = datasets.CIFAR10(data_path, True, download=True)
@@ -949,7 +949,7 @@ def dlg_attack_weight_share_protect():
 
     learn_rate = 1.0#1.0
     num_dummy = 1
-    Iteration = 500
+    Iteration = 50
     num_exp = 1  # 500
 
     cifar_train = torch.utils.data.DataLoader(
