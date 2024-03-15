@@ -4,7 +4,6 @@ import torch.optim as optim
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-
 class XNDB_Client(object):
 
     def __init__(self, conf, model, train_dataset, id=-1):
@@ -65,7 +64,6 @@ class XNDB_Client(object):
             scheduler.step()
         diff = dict()
         for name, data in self.local_model.state_dict().items():
-			diff[name] = (data - model.state_dict()[name])
-		# print(diff[name])
+            diff[name] = (data - model.state_dict()[name])
 
-		return diff
+        return diff

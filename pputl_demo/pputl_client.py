@@ -14,9 +14,6 @@ class PPUTL_Client(object):
         self.local_model = models.get_model(self.conf["model_name"])
         self.local_model = self.local_model.to(device)
 
-        # Check GPU availability and move the model to GPU if available
-        # if torch.cuda.is_available():
-        # 	self.local_model = self.local_model.cuda()
         self.mask = {}
         for name, param in self.local_model.state_dict().items():
             p = torch.ones_like(param) * self.conf["prop"]
