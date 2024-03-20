@@ -42,6 +42,7 @@ class Norm_Client(object):
         for name, param in model.state_dict().items():
             self.local_model.state_dict()[name].copy_(param.clone())
 
+
         # print(id(model))
         optimizer = torch.optim.SGD(self.local_model.parameters(), lr=self.conf['lr'], momentum=self.conf['momentum'])
         # print(id(self.local_model))
