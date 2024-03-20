@@ -29,8 +29,8 @@ class Train(object):
         elif choice == 5:
             self.dataset_path = "weight_share_protect/UDK_fl_add_mul_sort"
             self.global_testloader = torch.utils.data.DataLoader(
-                Mydataset_numpy_server_UDK(mode='test', dataset=self.dataset_path),
-                batch_size=self.conf["batch_size"], shuffle=True, num_workers=8, pin_memory=True)
+                Mydataset_numpy_server_UDK(mode='test', dataset=self.dataset_path, conf=self.conf),
+                batch_size=self.conf["batch_size"])
             self.server = Server(self.conf, self.global_testloader, choice)
 
         else:
@@ -72,13 +72,10 @@ class Train(object):
 
         for c in range(self.conf["no_models"]):
             trainloader = torch.utils.data.DataLoader(
-                Mydataset_numpy_client_UDK(mode='train', dataset=self.dataset_path, ID=c + 1),
-                batch_size=self.conf["batch_size"], shuffle=True, num_workers=8, pin_memory=True)
-            testloader = torch.utils.data.DataLoader(
-                Mydataset_numpy_client_UDK(mode='test', dataset=self.dataset_path, ID=c + 1),
-                batch_size=self.conf["batch_size"], shuffle=True, num_workers=8, pin_memory=True)
+                Mydataset_numpy_client_UDK(mode='train', dataset=self.dataset_path, conf=self.conf, ID=4),
+                batch_size=self.conf["batch_size"], shuffle=True)
 
-            u = User_UDK(self.conf, self.server.global_model, trainloader, testloader, c)
+            u = User_UDK(self.conf, self.server.global_model, trainloader, c)
             self.clients.append(u)
 
         for e in range(self.conf["global_epochs"]):
@@ -88,7 +85,6 @@ class Train(object):
 
             for c in candidates:
                 c.local_train(self.server.global_model)
-                c.test()
                 w = c.get_local_model()
                 local_weights.append(copy.deepcopy(w))
 
@@ -103,7 +99,7 @@ class Train(object):
     def pputl_client_train(self, G):
         train_dataset_size = len(self.train_datasets)
         for c in range(self.conf["no_models"]):
-            self.clients.append(PPUTL_Client(self.conf, self.server.global_model, G,train_dataset_size, c))
+            self.clients.append(PPUTL_Client(self.conf, self.server.global_model, G,train_dataset_size/self.conf["no_models"], c))
 
         for e in range(self.conf["global_epochs"]):
 

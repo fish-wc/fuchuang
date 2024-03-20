@@ -11,6 +11,7 @@ import csv
 from datetime import datetime
 from PIL import Image
 import torch
+import random
 from torchvision import datasets, transforms
 import torch.nn.functional as F
 import time
@@ -26,7 +27,7 @@ the return data format is torch.tensor(torch.FloatTensor)
 
 
 class Mydataset_numpy_server_UDK(Dataset):
-    def __init__(self, mode, dataset):
+    def __init__(self, mode, dataset,conf):
         self.png_label_list_train = []
         self.png_label_list_test = []
         # mode:"train" or "test"
@@ -41,15 +42,38 @@ class Mydataset_numpy_server_UDK(Dataset):
         self.root_train = self.dataset
         self.root_test = self.dataset
 
-        for i in range(User_number):
+        # # 打开CSV文件
+        # csv_file = open(self.dataset + "/user" + str(4) + '/test.csv', 'r')
+        # csv_file_test = csv.reader(csv_file)
+        #
+        # # 计算行数
+        # row_count = sum(1 for row in csv_file_test)
+        #
+        # # 重新定位到文件开始，以便再次读取
+        # csv_file.seek(0)
+        # csv_file_test = csv.reader(csv_file)
+        #
+        # num_samples_test = int(row_count / conf['no_models'])
+        #
+        # # 因为csv.reader对象不能直接支持随机访问，所以需要转换为列表来随机选取样本
+        # csv_file_test_list = list(csv_file_test)
+        # random_samples_test = random.sample(csv_file_test_list, num_samples_test)
+        #
+        # # 处理随机选取的测试数据
+        # for line in random_samples_test:
+        #     self.png_label_list_test.append(["user" + str(4) + "/test/" + line[0], int(line[1])])
+        #
+        # # 关闭文件
+        # csv_file.close()
+        csv_file = open(self.dataset + "/user" + str(4) + '/test.csv', 'r')
+        csv_file_test = csv.reader(csv_file)
 
-            csv_file_train = csv.reader(open(self.dataset + "/user" + str(i + 1) + '/train.csv', 'r'))
-            csv_file_test = csv.reader(open(self.dataset + "/user" + str(i + 1) + '/test.csv', 'r'))
-            for line in csv_file_train:
-                self.png_label_list_train.append([ "user" + str(i + 1)+"/train/" +line[0], int(line[1])])
+        # 直接处理所有的测试数据，不需要计算行数和重新定位到文件开始
+        for line in csv_file_test:
+            self.png_label_list_test.append(["user" + str(4) + "/test/" + line[0], int(line[1])])
 
-            for line in csv_file_test:
-                self.png_label_list_test.append([ "user" + str(i + 1)+"/test/" +line[0], int(line[1])])
+        # 关闭文件
+        csv_file.close()
 
     def __len__(self):
         if (self.mode == "train"):

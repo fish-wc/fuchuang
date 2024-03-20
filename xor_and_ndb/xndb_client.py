@@ -4,13 +4,14 @@ import torch.optim as optim
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
+
 class XNDB_Client(object):
 
     def __init__(self, conf, model, train_dataset, id=-1):
 
         self.conf = conf
 
-        self.local_model = models.get_model(self.conf["model_name"])
+        self.local_model = model
         self.local_model = self.local_model.to(device)
 
         # Check GPU availability and move the model to GPU if available
@@ -32,9 +33,7 @@ class XNDB_Client(object):
         data_len = int(len(self.train_dataset) / self.conf['no_models'])
         train_indices = all_range[id * data_len: (id + 1) * data_len]
 
-        self.train_loader = torch.utils.data.DataLoader(self.train_dataset, batch_size=conf["batch_size"],
-                                                        sampler=torch.utils.data.sampler.SubsetRandomSampler(
-                                                            train_indices))
+        self.train_loader = torch.utils.data.DataLoader(self.train_dataset, batch_size=conf["batch_size"],sampler=torch.utils.data.sampler.SubsetRandomSampler(train_indices))
 
 
 
@@ -65,5 +64,4 @@ class XNDB_Client(object):
         diff = dict()
         for name, data in self.local_model.state_dict().items():
             diff[name] = (data - model.state_dict()[name])
-
         return diff
