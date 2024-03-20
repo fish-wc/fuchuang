@@ -67,8 +67,10 @@ class Differential_Privacy_Client(object):
 				#print("\n\n")
 				if self.conf["dp"]:
 					model_norm = models.model_norm(model, self.local_model)
-					
-					norm_scale = min(1, self.conf['C'] / (model_norm))
+
+					if model_norm == 0:
+						model_norm = 1e-7  # 或者其他小的正数
+					norm_scale = min(1, self.conf['C'] / model_norm)
 					#print(model_norm, norm_scale)
 					for name, layer in self.local_model.named_parameters():
 						clipped_difference = norm_scale * (layer.data - model.state_dict()[name])
