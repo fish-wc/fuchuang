@@ -283,24 +283,29 @@ def NDB_f():
     #     "ndb_cifar10_data/image_9.txt"
     #     # ... 其他文件路径
     # ]
-    filein = [f for f in os.listdir('data/xored_data') if os.path.isfile(os.path.join('data/xored_data', f))]
+    filein = [f for f in os.listdir('data/xored_data/train') if os.path.isfile(os.path.join('data/xored_data/train/', f))]
     filein.sort(key=sort_key)
     file_count = sum(1 for _ in filein)
 
-    # filein = ['xored_cifar10_data/'+i for i in filein]
+    filein2 = [f for f in os.listdir('data/xored_data/eval') if os.path.isfile(os.path.join('data/xored_data/eval/', f))]
+    filein2.sort(key=sort_key)
+    file_count2 = sum(1 for _ in filein2)
+
+
     fileout = [ f'image_{i}.txt' for i in range(file_count)]#这里
+
+    fileout2 = [f'image_{i}.txt' for i in range(file_count2)]  # 这里
 
 
 
     for each in range(file_count):  # 假设有1000个文件进行处理#这里
         # 读取文件
-        with open('data/xored_data/'+filein[each], 'r') as file:
+        with open('data/xored_data/train/'+filein[each], 'r') as file:
             lines = file.readlines()
             count = 0
             for line in lines:
                 NDb[count] = line.strip()
                 count += 1
-
         print(f"{count}条数据已读取完成")
 
         # 处理每条数据
@@ -316,7 +321,7 @@ def NDB_f():
         print(f"完成第{each+1}次迭代")
 
         # 写入文件
-        directory = "data/ndb_data/"
+        directory = "data/ndb_data/train/"
         if not os.path.exists(directory):
             os.makedirs(directory)
         with open(directory+fileout[each], 'w') as file:
@@ -324,6 +329,38 @@ def NDB_f():
                 for j in range(1024):
                     file.write(f"{xq[i][j]} ")
                 file.write("\n")
+
+    for each in range(file_count2):  # 假设有1000个文件进行处理#这里
+        # 读取文件
+        with open('data/xored_data/eval/'+filein2[each], 'r') as file:
+            lines = file.readlines()
+            count = 0
+            for line in lines:
+                NDb[count] = line.strip()
+                count += 1
+        print(f"{count}条数据已读取完成")
+
+        # 处理每条数据
+        start_time = time.time()
+        for i in range(count):
+            f1(NDb[i])  # 生成每条数据的负数据库记录
+            calQ(i)    # 计算重构值
+            if i % 2500 < count :
+                print(f"已处理 {i+1} 条数据")
+
+        end_time = time.time()
+        print(f"处理时间：{end_time - start_time}秒")
+        print(f"完成第{each+1}次迭代")
+
+        # 写入文件
+        directory2 = "data/ndb_data/eval/"
+        if not os.path.exists(directory2):
+            os.makedirs(directory2)
+        with open(directory2+fileout2[each], 'w') as file2:
+            for i in range(count):
+                for j in range(1024):
+                    file2.write(f"{xq[i][j]} ")
+                file2.write("\n")
 
     print("所有数据处理完成")
 
