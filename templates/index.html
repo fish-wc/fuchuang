@@ -22,7 +22,7 @@
             // 发送 'train' 事件到服务器
             document.getElementById('trainButton').addEventListener('click', function() {
                 const choice = document.getElementById('choiceInput').value;
-                socket.emit('train', { choice: choice });
+                socket.emit('train', { choice: choice});
             });
 
             // 接收来自服务器的 'train_output' 事件，并将输出显示在页面上

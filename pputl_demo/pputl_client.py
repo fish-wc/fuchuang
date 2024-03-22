@@ -11,23 +11,22 @@ class PPUTL_Client(object):
 
         self.conf = conf
         self.G = G
-        self.local_model = models.get_model(self.conf["model_name"])
+        self.local_model = model
         self.local_model = self.local_model.to(device)
 
         # Check GPU availability and move the model to GPU if available
         # if torch.cuda.is_available():
         # 	self.local_model = self.local_model.cuda()
-        self.mask = {}
-        for name, param in self.local_model.state_dict().items():
-            p = torch.ones_like(param) * self.conf["prop"]
-            if torch.is_floating_point(param):
-                self.mask[name] = torch.bernoulli(p)
-            else:
-                self.mask[name] = torch.bernoulli(p).long()
+        # self.mask = {}
+        # for name, param in self.local_model.state_dict().items():
+        #     p = torch.ones_like(param) * self.conf["prop"]
+        #     if torch.is_floating_point(param):
+        #         self.mask[name] = torch.bernoulli(p)
+        #     else:
+        #         self.mask[name] = torch.bernoulli(p).long()
 
         self.client_id = id
         self.train_dataset_size = train_dataset_size
-
 
     def local_train(self, model):
 
@@ -58,7 +57,6 @@ class PPUTL_Client(object):
         diff = dict()
         for name, data in self.local_model.state_dict().items():
             diff[name] = (data - model.state_dict()[name])
-            diff[name] = diff[name] * self.mask[name]
         # print(diff[name])
 
         return diff

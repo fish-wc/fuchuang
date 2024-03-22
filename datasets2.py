@@ -9,16 +9,16 @@ import torch.nn.functional as F
 from xor_and_ndb import XOR_pre
 
 
-
 class custmResize:
     def __init__(self, size):
         self.size = size
 
     def __call__(self, img):
         img = img.unsqueeze(0)
-        img = F.interpolate(img, (self.size,self.size))
+        img = F.interpolate(img, (self.size, self.size))
         img = img.squeeze()
         return img
+
 
 class CustomDataset(Dataset):
     def __init__(self, data_root, transform=None):
@@ -39,6 +39,7 @@ class CustomDataset(Dataset):
             image = self.transform(image)
 
         return image
+
 
 # # 使用自定义数据集
 # transform = transforms.Compose([transforms.ToTensor()])
@@ -68,67 +69,63 @@ class CustomDataset(Dataset):
 # test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=2)
 
 
-def get_dataset(dir, name ,choice=None,subset_size=None):
-	if name == 'mnist':
-		train_dataset = datasets.MNIST(dir, train=True, download=True, transform=transforms.ToTensor())
-		eval_dataset = datasets.MNIST(dir, train=False, transform=transforms.ToTensor())
-		
-	if name == 'cifar':
-		transform_train = transforms.Compose([
-			transforms.RandomCrop(32, padding=4),
-			transforms.RandomHorizontalFlip(),
-			transforms.ToTensor(),
-			transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-		])
+def get_dataset(dir, name, choice=None, subset_size=None):
+    if name == 'mnist':
+        train_dataset = datasets.MNIST(dir, train=True, download=True, transform=transforms.ToTensor())
+        eval_dataset = datasets.MNIST(dir, train=False, transform=transforms.ToTensor())
 
-		transform_test = transforms.Compose([
-			transforms.ToTensor(),
-			transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-		])
-		transform_2 = transforms.Compose([
-			transforms.RandomCrop(32, padding=4),
-			transforms.RandomHorizontalFlip(),
-			transforms.ToTensor(),
-			custmResize(64),
-			transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)), ])
-		if choice == 3:
-			train_dataset = XOR_pre.cifar10(root=dir, train=True, transform=transform_train)
-			eval_dataset = XOR_pre.cifar10(root=dir, train=False, transform=transform_test)
-		elif choice == 4:
-			train_dataset = datasets.CIFAR10(dir, train=True, download=True, transform=transform_2)
-			eval_dataset = datasets.CIFAR10(dir, train=False, transform=transform_2)
-		else:
-			train_dataset = datasets.CIFAR10(dir, train=True, download=True ,transform=transform_train)
-			eval_dataset = datasets.CIFAR10(dir, train=False, transform=transform_test)
+    if name == 'cifar':
+        transform_train = transforms.Compose([
+            transforms.RandomCrop(32, padding=4),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+        ])
 
+        transform_test = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+        ])
+        transform_2 = transforms.Compose([
+            transforms.RandomCrop(32, padding=4),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            custmResize(64),
+            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)), ])
+        if choice == 3:
+            train_dataset = XOR_pre.cifar10(root=dir, train=True, transform=transform_train)
+            eval_dataset = XOR_pre.cifar10(root=dir, train=False, transform=transform_test)
+        elif choice == 4:
+            train_dataset = datasets.CIFAR10(dir, train=True, download=True, transform=transform_2)
+            eval_dataset = datasets.CIFAR10(dir, train=False, transform=transform_2)
+        else:
+            train_dataset = datasets.CIFAR10(dir, train=True, download=True, transform=transform_train)
+            eval_dataset = datasets.CIFAR10(dir, train=False, transform=transform_test)
 
+    if subset_size is not None:
+        # 假设 total_size 是原始数据集的大小
+        train_size = len(train_dataset)  # 或 eval_dataset
+        eval_size = len(eval_dataset)
 
-	if subset_size is not None:
-		# 假设 total_size 是原始数据集的大小
-		train_size = len(train_dataset)  # 或 eval_dataset
-		eval_size = len(eval_dataset)
+        # 生成一个从0到 total_size-1 的索引列表
+        indices_train = list(range(train_size))
+        indices_eval = list(range(eval_size))
 
-		# 生成一个从0到 total_size-1 的索引列表
-		indices_train = list(range(train_size))
-		indices_eval  = list(range(eval_size))
+        # # 随机打乱索引
+        # random.shuffle(indices_train)
+        # random.shuffle(indices_eval)
 
-		# # 随机打乱索引
-		# random.shuffle(indices_train)
-		# random.shuffle(indices_eval)
+        # 从打乱的索引中取出前 subset_size 个创建子数据集
+        train_subset_indices = indices_train[:subset_size]
+        eval_subset_indices = indices_eval[:subset_size]
 
-		# 从打乱的索引中取出前 subset_size 个创建子数据集
-		train_subset_indices = indices_train[:subset_size]
-		eval_subset_indices = indices_eval[:subset_size]
+        # 创建子数据集
+        train_dataset = Subset(train_dataset, train_subset_indices)
+        eval_dataset = Subset(eval_dataset, eval_subset_indices)
+    # train_dataset = Subset(train_dataset, list(range(subset_size)))
+    # eval_dataset = Subset(eval_dataset, list(range(subset_size)))
 
-		# 创建子数据集
-		train_dataset = Subset(train_dataset, train_subset_indices)
-		eval_dataset = Subset(eval_dataset, eval_subset_indices)
-		# train_dataset = Subset(train_dataset, list(range(subset_size)))
-		# eval_dataset = Subset(eval_dataset, list(range(subset_size)))
-
-	return train_dataset, eval_dataset
-
-
+    return train_dataset, eval_dataset
 
 # transform_train
 # RandomCrop(32, padding=4): 这个转换首先对图像周围添加4个像素的填充（默认填充模式是零填充），然后随机裁剪出一个32x32像素的区域。这种类型的随机裁剪是一种数据增强技术，有助于减少模型对图像位置的依赖。

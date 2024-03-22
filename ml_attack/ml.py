@@ -3,9 +3,11 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, accuracy_score
 import torchvision
 import torch.nn as nn
+from torchvision import transforms
 from torch.utils.data import TensorDataset, DataLoader
 from xor_and_ndb import XOR_pre
 from weight_share_protect.Mydataset_for_numpy_client_UDK import *
+import torch.optim as optim
 np.random.seed(21312)
 test_feat = None  # 测试特征文件路径，默认为 None
 test_label = None  # 测试标签文件路径，默认为 None

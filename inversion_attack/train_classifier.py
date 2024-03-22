@@ -4,8 +4,8 @@ from inversion_attack.inversion_attack_model import Classifier
 from xor_and_ndb import XOR_pre
 from weight_share_protect.Mydataset_for_numpy_client_UDK import *
 # Training settings
-batch_size = 256
-test_batch_size = 1000
+batch_size = 8
+test_batch_size = 10
 epochs = 1#10
 lr = 0.1  # Learning rate
 momentum = 0.5
@@ -13,7 +13,7 @@ no_cuda = False
 seed = 1
 log_interval = 10
 nc = 3  # Number of channels
-ndf = 256  # Number of discriminator filters
+ndf = 32  # Number of discriminator filters
 nz = 10  # Size of the latent Z vector
 num_workers = 8
 

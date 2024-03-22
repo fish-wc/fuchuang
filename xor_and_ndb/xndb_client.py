@@ -11,19 +11,19 @@ class XNDB_Client(object):
 
         self.conf = conf
 
-        self.local_model = models.get_model(self.conf["model_name"])
+        self.local_model = model
         self.local_model = self.local_model.to(device)
 
         # Check GPU availability and move the model to GPU if available
         # if torch.cuda.is_available():
         # 	self.local_model = self.local_model.cuda()
-        self.mask = {}
-        for name, param in self.local_model.state_dict().items():
-            p = torch.ones_like(param) * self.conf["prop"]
-            if torch.is_floating_point(param):
-                self.mask[name] = torch.bernoulli(p)
-            else:
-                self.mask[name] = torch.bernoulli(p).long()
+        # self.mask = {}
+        # for name, param in self.local_model.state_dict().items():
+        #     p = torch.ones_like(param) * self.conf["prop"]
+        #     if torch.is_floating_point(param):
+        #         self.mask[name] = torch.bernoulli(p)
+        #     else:
+        #         self.mask[name] = torch.bernoulli(p).long()
 
         self.client_id = id
 
@@ -33,9 +33,7 @@ class XNDB_Client(object):
         data_len = int(len(self.train_dataset) / self.conf['no_models'])
         train_indices = all_range[id * data_len: (id + 1) * data_len]
 
-        self.train_loader = torch.utils.data.DataLoader(self.train_dataset, batch_size=conf["batch_size"],
-                                                        sampler=torch.utils.data.sampler.SubsetRandomSampler(
-                                                            train_indices))
+        self.train_loader = torch.utils.data.DataLoader(self.train_dataset, batch_size=conf["batch_size"],sampler=torch.utils.data.sampler.SubsetRandomSampler(train_indices))
 
 
 
@@ -66,7 +64,4 @@ class XNDB_Client(object):
         diff = dict()
         for name, data in self.local_model.state_dict().items():
             diff[name] = (data - model.state_dict()[name])
-            diff[name] = diff[name] * self.mask[name]
-        # print(diff[name])
-
         return diff

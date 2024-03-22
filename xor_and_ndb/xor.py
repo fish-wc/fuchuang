@@ -1,6 +1,4 @@
-import torch
-import torchvision
-import torchvision.transforms as transforms
+
 import random
 import os
 import datasets2
@@ -74,23 +72,25 @@ def xor_dataset(dataset, xor_key):
 
 def XOR():
     # 加载CIFAR-10数据集
-    trainset, eval_datasets = datasets2.get_dataset("data/", 'cifar',subset_size= 10000)#这里
-    # 获取 trainset 的索引
-    subset_indices = trainset.indices
+    train_datasets, eval_datasets = datasets2.get_dataset("data/", 'cifar')#这里
 
-    # 从原始数据集中获取目标标签
-    original_targets = trainset.dataset.targets
-
-    # 使用索引从原始目标标签中提取对应的子集标签
-    target = [original_targets[i] for i in subset_indices]
+    # # 获取 trainset 的索引
+    # subset_indices = trainset.indices
+    #
+    # # 从原始数据集中获取目标标签
+    # original_targets = trainset.dataset.targets
+    #
+    # # 使用索引从原始目标标签中提取对应的子集标签
+    # target = [original_targets[i] for i in subset_indices]
 
 
     # 获取数据集中的图像数据
-    images = [data[0] for data in trainset]
+    images_train = [data[0] for data in train_datasets]
+    images_eval = [data[0] for data in eval_datasets]
 
     # 转换图像数据为二进制字符串
-    binary_images = convert_to_binary_string(images)
-
+    binary_images_train = convert_to_binary_string(images_train)
+    binary_images_eval = convert_to_binary_string(images_eval)
     # # 生成随机密钥
     # xor_key = generate_xor_key(binary_images[0])
     #
@@ -98,30 +98,52 @@ def XOR():
     # xored_images = xor_dataset(binary_images, xor_key)
 
     xor_key = generate_xor_key(128)
-    xored_images = xor_dataset(binary_images, xor_key)
+    xored_images_train = xor_dataset(binary_images_train, xor_key)
+    xored_images_eval = xor_dataset(binary_images_eval, xor_key)
     # 保存异或后的数据到文件
     output_directory = 'data/xored_data'
     os.makedirs(output_directory, exist_ok=True)
 
-    for i, xored_item in enumerate(xored_images):
-        filename = os.path.join(output_directory, f'xored_image_{i}.txt')
+    output_directory_train = 'data/xored_data/train/'
+    os.makedirs(output_directory_train, exist_ok=True)
+
+    output_directory_eval = 'data/xored_data/eval/'
+    os.makedirs(output_directory_eval, exist_ok=True)
+
+    for i, xored_item in enumerate(xored_images_train):
+        filename = os.path.join(output_directory_train, f'xored_image_{i}.txt')
         with open(filename, 'w') as f:
             # 分别写入红色、绿色和蓝色通道的二进制字符串
             for channel_data in xored_item:
                 f.write(channel_data + "\n")
+
+    for i, xored_item in enumerate(xored_images_eval):
+        filename = os.path.join(output_directory_eval, f'xored_image_{i}.txt')
+        with open(filename, 'w') as f:
+            # 分别写入红色、绿色和蓝色通道的二进制字符串
+            for channel_data in xored_item:
+                f.write(channel_data + "\n")
+
     output_directory_label = 'data/ndb_data/'
     os.makedirs(output_directory_label, exist_ok=True)
-    trainfile_label = os.path.join(output_directory_label,f'train_label.txt')
-    train_num = int(len(target) * 0.8)
 
-    with open(trainfile_label,'w') as f:
-        subset1 = target[:train_num]
-        for i in range(train_num):
-            f.write(str(subset1[i])+'\n')
-    testfile_label = os.path.join(output_directory_label,f'test_label.txt')
-    with open(testfile_label,'w') as f:
-        subset2 = target[train_num:]
-        for item in subset2:
-            f.write(str(item) + '\n')
+    output_directory_label_train = 'data/ndb_data/train/'
+    os.makedirs(output_directory_label_train, exist_ok=True)
+
+    output_directory_label_eval = 'data/ndb_data/eval/'
+    os.makedirs(output_directory_label_eval, exist_ok=True)
+
+    trainfile_label = os.path.join(output_directory_label_train,f'train_label.txt')
+    evalfile_label = os.path.join(output_directory_label_eval, f'eval_label.txt')
+
+
+    with open(trainfile_label,'w') as f_train:
+        for _, label in train_datasets:
+            f_train.write(f"{label}\n")
+
+    with open(evalfile_label, 'w') as f_eval:
+        for _, label in eval_datasets:
+            f_eval.write(f"{label}\n")
+
 
 

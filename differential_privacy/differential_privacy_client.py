@@ -7,19 +7,19 @@ class Differential_Privacy_Client(object):
 		
 		self.conf = conf
 
-		self.local_model = models.get_model(self.conf["model_name"])
+		self.local_model = model
 		self.local_model = self.local_model.to(device)
 		
 		self.client_id = id
 		
 		self.train_dataset = train_dataset
-		self.mask = {}
-		for name, param in self.local_model.state_dict().items():
-			p = torch.ones_like(param) * self.conf["prop"]
-			if torch.is_floating_point(param):
-				self.mask[name] = torch.bernoulli(p)
-			else:
-				self.mask[name] = torch.bernoulli(p).long()
+		# self.mask = {}
+		# for name, param in self.local_model.state_dict().items():
+		# 	p = torch.ones_like(param) * self.conf["prop"]
+		# 	if torch.is_floating_point(param):
+		# 		self.mask[name] = torch.bernoulli(p)
+		# 	else:
+		# 		self.mask[name] = torch.bernoulli(p).long()
 
 		all_range = list(range(len(self.train_dataset)))
 		data_len = int(len(self.train_dataset) / self.conf['no_models'])
@@ -67,8 +67,10 @@ class Differential_Privacy_Client(object):
 				#print("\n\n")
 				if self.conf["dp"]:
 					model_norm = models.model_norm(model, self.local_model)
-					
-					norm_scale = min(1, self.conf['C'] / (model_norm))
+
+					if model_norm == 0:
+						model_norm = 1e-7  # 或者其他小的正数
+					norm_scale = min(1, self.conf['C'] / model_norm)
 					#print(model_norm, norm_scale)
 					for name, layer in self.local_model.named_parameters():
 						clipped_difference = norm_scale * (layer.data - model.state_dict()[name])
@@ -78,10 +80,7 @@ class Differential_Privacy_Client(object):
 		diff = dict()
 		for name, data in self.local_model.state_dict().items():
 			diff[name] = (data - model.state_dict()[name])
-			diff[name] = diff[name] * self.mask[name]
-			
-		#print("\n\nfinishing local model training ... ... ")
-		#for name, layer in self.local_model.named_parameters():
-		#	print(name, "->", torch.mean(layer.data))
+		# print(diff[name])
+
 		return diff
 		

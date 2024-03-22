@@ -1,5 +1,5 @@
 import math
-
+from resnet50 import *
 import models, torch
 import copy
 from homomorphic_encryption import paillier
@@ -22,13 +22,12 @@ class Server(object):
             self.eval_x = eval_dataset[0]
             self.eval_y = eval_dataset[1]
         elif choice == 5:
-            self.global_model = models.get_model(self.conf["model_name"])
+            self.global_model = ResNet18()
             self.dataset_path = "weight_share_protect/UDK_fl_add_mul_sort"
             self.global_testloader = eval_dataset
         else:
-            self.global_model = models.get_model(self.conf["model_name"])
-            self.eval_loader = torch.utils.data.DataLoader(eval_dataset, batch_size=self.conf["batch_size"],
-                                                           shuffle=True)
+            self.global_model = ResNet18()
+            self.eval_loader = torch.utils.data.DataLoader(eval_dataset, batch_size=self.conf["batch_size"])
 
         self.eval_dataset_size = len(eval_dataset)
 
@@ -219,3 +218,4 @@ class Server(object):
     @staticmethod
     def re_encrypt(w):
         return models.encrypt_vector(Server.public_key, models.decrypt_vector(Server.private_key, w))
+

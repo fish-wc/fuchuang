@@ -8,18 +8,14 @@
 """
 
 
-import gzip
+
 import os
-import random
-import pickle
-import urllib
 import re
 from PIL import Image
 import numpy as np
 import torch
 import torch.utils.data as data
-from torchvision import datasets, transforms
-from torchvision import transforms
+
 
 
 def sort_key(name):
@@ -55,33 +51,40 @@ class cifar10(data.Dataset):
         # ]
         # test_list=['image_6.txt','image_7.txt','image_8.txt','image_9.txt','test_label.txt']
 
-        files = [f for f in os.listdir('data/ndb_data')]
-        files.sort(key=sort_key)
-        files = files[2:]
+
 
         # # 打乱文件列表
         # random.shuffle(files)
 
-        # 计算训练集的大小
-        train_size = int(len(files) * 0.8)
-
-        # 切分训练集和测试集
-        train_list = files[:train_size]
-        train_list.append('train_label.txt')
-        test_list = files[train_size:]
-        test_list.append('test_label.txt')
+        # # 计算训练集的大小
+        # train_size = int(len(files) * 0.8)
+        #
+        # # 切分训练集和测试集
+        # train_list = files[:train_size]
+        # train_list.append('train_label.txt')
+        # test_list = files[train_size:]
+        # test_list.append('test_label.txt')
 
 
         if self.train :
+            files = [f for f in os.listdir('data/ndb_data/train')]
+            files.sort(key=sort_key)
+            train_list = files[1:]
+            train_list.append('train_label.txt')
             list = train_list
             target_list=train_list[-1]
+            self.root = root + "ndb_data/train/"
         else:
+            files = [f for f in os.listdir('data/ndb_data/eval')]
+            files.sort(key=sort_key)
+            test_list = files[1:]
+            test_list.append('eval_label.txt')
             list = test_list
             target_list = test_list[-1]
+            self.root = root + "ndb_data/eval/"
 
         self.data=[]
         self.targets=[]
-        self.root = root+"ndb_data/"
         for file_name in list[:-1]:
              file_path = os.path.join(self.root, file_name)
              with open(file_path,'r') as f:
@@ -94,7 +97,7 @@ class cifar10(data.Dataset):
                              tmp.append(float(j))
                          i+=1
                      self.data.append(tmp)
-        
+
          #当RGB图像以一行进行存储时的读取规范
 #        for file_name in list[:-1]:
 #           file_path = os.path.join(root, file_name)
@@ -105,12 +108,16 @@ class cifar10(data.Dataset):
 #                    for j in datas[i].split(' ')[:-1]:
 #                        tmp.append(float(j))
 #                    self.data.append(tmp)
-        
+
         file_path_test = os.path.join(self.root, target_list)
         with open(file_path_test,'r') as f:
-            datas=f.readlines()
-            for i in datas:
-                self.targets.append(float(i))
+            # datas=f.readlines()
+            # for i in datas:
+            #     i=i.strip()
+            #     i = float(i)
+            for line in f:
+                stripped_line = line.strip()
+                self.targets.append(float(stripped_line))
         self.data =np.vstack(self.data).reshape(-1, 3, 32, 32)
         # self.data =np.vstack(self.data).reshape(-1, 1, 28, 28)
 
