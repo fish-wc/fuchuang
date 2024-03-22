@@ -35,7 +35,7 @@ from flwr.server.strategy import FedAvg
 
 import os
 
-model_path = "./models/global_model"  # 假设你想将模型保存在这里
+model_path = "./mymodels/global_model"  # 假设你想将模型保存在这里
 directory = os.path.dirname(model_path)
 
 # 如果目录不存在，创建它

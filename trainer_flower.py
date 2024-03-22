@@ -14,7 +14,7 @@ import argparse
 import subprocess
 import threading
 
-model_path = "./models/global_model"  # 假设你想将模型保存在这里
+model_path = "./mymodels/global_model"  # 假设你想将模型保存在这里
 directory = os.path.dirname(model_path)
 # 如果目录不存在，创建它
 if not os.path.exists(directory):
@@ -196,6 +196,9 @@ class Train(object):
         total_l = total_loss / dataset_size
 
         return acc, total_l
+
+    def weight_share_protect_train(self):
+        pass
 
 
 def main():
