@@ -1,17 +1,31 @@
-
 import models, torch
 import numpy as np
 from sklearn.decomposition import PCA
-class Homomorphic_Encryption_Client(object):
+from typing import Dict, List, Tuple
+from collections import OrderedDict
+from flwr.common import Scalar, NDArrays
+import argparse
 
-    def __init__(self, conf, public_key, weights, data_x, data_y):
+import sys
+import os
+# 添加上层目录到 sys.path
+parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(parent_dir)
+
+import datasets2
+
+import flwr as fl
+
+### 迁移难度偏大，这部分先不做迁移，保留原来的！！！！
+class Homomorphic_Encryption_Client(fl.client.NumPyClient):
+
+    def __init__(self, conf, public_key, weights, data_x, data_y,):
 
         self.conf = conf
 
         self.public_key = public_key
 
         self.local_model = models.LR_Model(public_key=self.public_key, w=weights, encrypted=True)
-
 
         # print(type(self.local_model.encrypt_weights))
         self.data_x = data_x
@@ -27,6 +41,7 @@ class Homomorphic_Encryption_Client(object):
         self.local_model.set_encrypt_weights(weights)
 
         neg_one = self.public_key.encrypt(-1)
+
 
         for e in range(self.conf["local_epochs"]):
             print("start epoch ", e)
@@ -60,6 +75,3 @@ class Homomorphic_Encryption_Client(object):
             weight_accumulators.append(self.local_model.encrypt_weights[j] - original_w[j])
 
         return weight_accumulators
-
-
-

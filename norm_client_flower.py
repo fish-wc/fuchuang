@@ -20,8 +20,11 @@ class Norm_Client(fl.client.NumPyClient):
 
         self.conf = conf
 
-        self.local_model = models.get_model(self.conf["model_name"])
+        self.local_model = model
         self.local_model = self.local_model.to(device)
+
+        # self.local_model = models.get_model(self.conf["model_name"])
+        # self.local_model = self.local_model.to(device)
 
         self.mask = {}
         for name, param in self.local_model.state_dict().items():
@@ -145,9 +148,11 @@ def main() -> None:
     """Load data, start CifarClient."""
     conf = {"model_name": "resnet50", "no_models": 3, "type": "cifar", "global_epochs": 3, "local_epochs": 3, "k": 3,
             "batch_size": 8, "client_batchsize": 100, "global_batchsize": 500, "lr": 0.1, "momentum": 0.9,
-            "lambda": 0.1,
-            "dp": True, "C": 1000, "sigma": 0.01, "q": 0.2, "W": 2, "feature_num": 30, "eta": 2, "alpha": 1.0,
-            "poison_label": 2, "poisoning_per_batch": 4, "prop": 0.6, "root": "ndb_cifar10_data/"
+            "lambda": 0.1, "dp": True, "C": 1000, "sigma": 0.01, "q": 0.2, "W": 2, "feature_num": 30, "eta": 2,
+            "alpha": 1.0,
+            "poison_label": 2, "poisoning_per_batch": 4, "prop": 0.6, "root": "ndb_cifar10_data/",
+            "address": "127.0.0.1:8080",
+            "min_available_clients": 2,
             }
     parser = argparse.ArgumentParser(description="Flower")
     parser.add_argument("--node-id", type=int, default=1,choices=range(0, 10))
@@ -159,7 +164,7 @@ def main() -> None:
 
     # Start client
     client = Norm_Client(conf,global_model, train_datasets, eval_datasets,id=args.node_id).to_client()
-    fl.client.start_client(server_address="10.82.175.165:8080", client=client)
+    fl.client.start_client(server_address="127.0.0.1:8080", client=client)
 
 
 
