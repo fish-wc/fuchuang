@@ -72,11 +72,11 @@ if __name__ == '__main__':
 	else:
 		trainer.homomorphic_encryption_train()
 
-	with open('acc.txt', 'w') as f:
-		json.dump(trainer.accs, f)
-
-	with open('loss.txt', 'w') as f:
-		json.dump(trainer.losses, f)
+	# with open('acc.txt', 'w') as f:
+	# 	json.dump(trainer.accs, f)
+	#
+	# with open('loss.txt', 'w') as f:
+	# 	json.dump(trainer.losses, f)
 
 	print(trainer.accs,trainer.losses)
 	# acc_loss(trainer.accs,trainer.losses)
