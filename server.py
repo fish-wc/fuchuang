@@ -1,9 +1,13 @@
 import math
-from resnet50 import *
-import models, torch
+from all_models.resnet50 import *
+from all_models.densenet import *
+from all_models.dla_simple import *
+from all_models.googlenet import *
+from all_models.mobilenet import *
+from all_models.vgg import *
+import models
 import copy
 from homomorphic_encryption import paillier
-import numpy as np
 import torch.nn as nn
 from weight_share_protect.Mydataset_for_numpy_server_UDK import *
 
@@ -16,17 +20,39 @@ class Server(object):
     def __init__(self, conf, eval_dataset, choice):
 
         self.conf = conf
-
+        self.model_name=self.conf["model_name"]
         if choice == 2:
             self.global_model = models.LR_Model(public_key=Server.public_key, w_size=self.conf["feature_num"] + 1)
             self.eval_x = eval_dataset[0]
             self.eval_y = eval_dataset[1]
         elif choice == 5:
-            self.global_model = ResNet18()
+            if self.model_name=="resnet50":
+                self.global_model = ResNet50()
+            elif self.model_name=="densenet":
+                self.global_model = DenseNet121()
+            elif self.model_name=="simpledla":
+                self.global_model = SimpleDLA()
+            elif self.model_name=="googlenet":
+                self.global_model = GoogLeNet()
+            elif self.model_name=="mobilenet":
+                self.global_model = MobileNet()
+            else:
+                self.global_model = VGG()
             self.dataset_path = "weight_share_protect/UDK_fl_add_mul_sort"
             self.global_testloader = eval_dataset
         else:
-            self.global_model = ResNet18()
+            if self.model_name == "resnet50":
+                self.global_model = ResNet50()
+            elif self.model_name == "densenet":
+                self.global_model = DenseNet121()
+            elif self.model_name == "simpledla":
+                self.global_model = SimpleDLA()
+            elif self.model_name == "googlenet":
+                self.global_model = GoogLeNet()
+            elif self.model_name == "mobilenet":
+                self.global_model = MobileNet()
+            else:
+                self.global_model = VGG()
             self.eval_loader = torch.utils.data.DataLoader(eval_dataset, batch_size=self.conf["batch_size"])
 
         self.eval_dataset_size = len(eval_dataset)
