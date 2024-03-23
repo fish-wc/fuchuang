@@ -1,4 +1,4 @@
-from trainer_flower_Thread import *
+
 import json
 import argparse
 from plot_acc import *
@@ -63,6 +63,8 @@ if __name__ == '__main__':
     parser.add_argument('--min_available_clients',type=int,default=2,help="min available clients")
     parser.add_argument('--node_id',type=int,default=1,help="client's id")
     parser.add_argument('--value_steps',type=int,default=5,help="number of clients to evaluate")
+    parser.add_argument('--increment',type=str,default="./mymodel/resnet50.pth",help="the model you want to train")
+    parser.add_argument('--is_increment',type=bool,default=True,help="do you need increment?")
     args = parser.parse_args()
 
     # 选择保护算法
@@ -78,7 +80,7 @@ if __name__ == '__main__':
             "eta": args.eta, "alpha": args.alpha, "poison_label": args.poison_label,
             "poisoning_per_batch": args.poisoning_per_batch, "prop": args.prop, "root": args.root,
             "address":args.address ,"min_available_clients": args.min_available_clients,"node_id":args.node_id #这里又加了两排
-            ,"value_steps":args.value_steps,
+            ,"value_steps":args.value_steps,"increment":args.increment,"is_increment":args.is_increment,
             }
     model_path = "./models/global_model"  # 假设你想将模型保存在这里
     directory = os.path.dirname(model_path)
@@ -135,6 +137,12 @@ if __name__ == '__main__':
     elif choice == 5:
      #   matrix_add_mul_sort(user_num=conf["no_models"])
         trainer.start_weight_share_protect_train()
+
+    elif choice==6:
+        #这里用来测试的
+        acc,loss=trainer.predict(save_path="./mymodel/vgg16.pth")
+        print("accuracy:",acc,"loss",loss)
+
 
 
 

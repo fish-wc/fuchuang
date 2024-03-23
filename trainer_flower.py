@@ -1,3 +1,5 @@
+import torch
+
 from server_flower import *
 from norm_client_flower import *
 import datasets2
@@ -14,6 +16,11 @@ import argparse
 import subprocess
 import threading
 
+# import sys
+# sys.path.append("./all_models")
+
+from all_models.resnet_total import ResNet18
+
 model_path = "./mymodels/global_model"  # 假设你想将模型保存在这里
 directory = os.path.dirname(model_path)
 # 如果目录不存在，创建它
@@ -27,6 +34,7 @@ class Train(object):
     def __init__(self, conf, choice,node_id):
         self.conf = conf
         self.node_id=node_id
+
         if choice == 2:
             pca = PCA(n_components=30)
 
@@ -213,8 +221,45 @@ class Train(object):
         self.accs = self.server.accs
         self.losses = self.server.losses
 
+    def predict(self,save_path):
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        # model = ResNet18()
+        model = torch.load(save_path, map_location=torch.device('cpu'))
 
+        # model=torch.load(save_path)
+        # model.load_state_dict(torch.load(save_path))
 
+        # GPU 模式
+        model = model.to(device)  # 扔到GPU中
+        # 假设 model_ft 是你的模型实例
+        # model = torch.load(save_path)
+
+        classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
+
+        model.eval()
+
+        total_loss = 0.0
+        correct = 0
+        dataset_size = 0
+        for batch_id, batch in enumerate(self.eval_loader):
+            data, target = batch
+            dataset_size += data.size()[0]
+
+            if torch.cuda.is_available():
+                data = data.cuda()
+                target = target.cuda()
+
+            output = model(data)
+
+            total_loss += torch.nn.functional.cross_entropy(output, target,
+                                                            reduction='sum').item()  # sum up batch loss
+            pred = output.data.max(1)[1]  # get the index of the max log-probability
+            correct += pred.eq(target.data.view_as(pred)).cpu().sum().item()
+
+        acc = 100.0 * (float(correct) / float(dataset_size))
+        total_l = total_loss / dataset_size
+
+        return acc, total_l
 
 
 def main():
