@@ -7,7 +7,7 @@ from homomorphic_encryption.homomorphic_encryption_client_flower import *
 
 from xor_and_ndb.xndb_client_flower import *
 from pputl_demo.pputl_client_flower import *
-from weight_share_protect.User_UDK import *
+from weight_share_protect.User_UDK_flower import *
 from weight_share_protect.Mydataset_for_numpy_client_UDK import *
 from weight_share_protect.Mydataset_for_numpy_server_UDK import *
 import argparse
@@ -45,6 +45,7 @@ class Train(object):
                 batch_size=self.conf["batch_size"], shuffle=True, num_workers=8, pin_memory=True)
             self.server = Server(self.conf, self.global_testloader, choice)
 
+
         else:
             self.train_datasets, self.eval_datasets = datasets2.get_dataset("data/", self.conf["type"], choice,subset_size=1000)
             self.server = Server(self.conf, self.eval_datasets, choice)
@@ -78,7 +79,7 @@ class Train(object):
         self.accs = self.server.accs
         self.losses = self.server.losses
 
-        print("results:",self.eval(model_path))
+        # print("results:",self.eval(model_path))
 
     def start_differential_privacy_train(self):
         # 实例化客户端
@@ -92,7 +93,7 @@ class Train(object):
         self.accs = self.server.accs
         self.losses = self.server.losses
 
-        print("results:", self.eval(model_path))
+        # print("results:", self.eval(model_path))
 
     def start_homomorphic_encryption_train(self):
         #这里需要注意一下，跟原来是一样的
@@ -133,7 +134,7 @@ class Train(object):
             self.accs.append(acc)
             self.losses.append(loss)
 
-            print("Epoch %d, acc: %f\n" % (e, acc))
+            # print("Epoch %d, acc: %f\n" % (e, acc))
 
     def start_xndb_train(self):
         # 实例化客户端
@@ -148,7 +149,7 @@ class Train(object):
         self.accs = self.server.accs
         self.losses = self.server.losses
 
-        print("results:", self.eval(model_path))
+        # print("results:", self.eval(model_path))
 
     def start_pputl_client_train(self,G):
         train_dataset_size = len(self.train_datasets)
@@ -163,7 +164,7 @@ class Train(object):
         self.accs = self.server.accs
         self.losses = self.server.losses
 
-        print("results:", self.eval(model_path))
+        # print("results:", self.eval(model_path))
 
     def eval(self,model_path):
         # self.model=models.get_model(self.conf["model_name"])
@@ -197,8 +198,23 @@ class Train(object):
 
         return acc, total_l
 
-    def weight_share_protect_train(self):
-        pass
+    def start_weight_share_protect_train(self):
+        trainloader = torch.utils.data.DataLoader(
+            Mydataset_numpy_client_UDK(mode='train', dataset=self.dataset_path, conf=self.conf, ID=4),
+            batch_size=self.conf["batch_size"], shuffle=True)
+        client=User_UDK(self.conf, self.server.global_model, trainloader,self.global_testloader, self.node_id)
+
+        self.clients.append(client)
+
+        # 启动客户端口服务器
+        to_client = client.to_client()
+        fl.client.start_client(server_address=self.conf["address"], client=to_client)
+
+        self.accs = self.server.accs
+        self.losses = self.server.losses
+
+
+
 
 
 def main():

@@ -11,7 +11,7 @@ from torchvision import transforms
 from torch import nn, optim
 from xor_and_ndb import XOR_pre
 from dlg_attack.cc import *
-from weight_share_protect.User_UDK import *
+from weight_share_protect.User_UDK_flower import *
 from weight_share_protect.Mydataset_for_numpy_client_UDK import *
 
 

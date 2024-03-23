@@ -7,7 +7,7 @@ from homomorphic_encryption.homomorphic_encryption_client import *
 
 from xor_and_ndb.xndb_client_flower import *
 from pputl_demo.pputl_client_flower import *
-from weight_share_protect.User_UDK import *
+from weight_share_protect.User_UDK_flower import *
 from weight_share_protect.Mydataset_for_numpy_client_UDK import *
 from weight_share_protect.Mydataset_for_numpy_server_UDK import *
 import argparse

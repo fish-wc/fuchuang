@@ -91,6 +91,7 @@ if __name__ == '__main__':
         trainer.start_server()
         print("服务器训练结束")
 
+        # 在这里获取训练的评价指标
         acc_loss(trainer.accs, trainer.losses)
 
     elif choice == 0:
@@ -131,9 +132,9 @@ if __name__ == '__main__':
         print(f"正在启动编号为{node_id}的client...")
         trainer.start_pputl_client_train(G)
 
-    # elif choice == 5:
-    #  #   matrix_add_mul_sort(user_num=conf["no_models"])
-    #     trainer.weight_share_protect_train()
+    elif choice == 5:
+     #   matrix_add_mul_sort(user_num=conf["no_models"])
+        trainer.start_weight_share_protect_train()
 
 
 
