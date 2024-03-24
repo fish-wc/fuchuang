@@ -13,8 +13,9 @@ from weight_share_protect.User_UDK_flower import *
 from weight_share_protect.Mydataset_for_numpy_client_UDK import *
 from weight_share_protect.Mydataset_for_numpy_server_UDK import *
 import argparse
-import subprocess
-import threading
+
+
+import utils
 
 # import sys
 # sys.path.append("./all_models")
@@ -174,38 +175,6 @@ class Train(object):
 
         # print("results:", self.eval(model_path))
 
-    def eval(self,model_path):
-        # self.model=models.get_model(self.conf["model_name"])
-        global_epochs=self.conf["global_epochs"]-1
-        save_model_path=model_path+f"{global_epochs}.pth"
-        self.model=torch.load(save_model_path)
-        # 将模型设置为评估模式，这对于推理很重要
-        self.model.eval()
-        total_loss = 0.0
-        correct = 0
-        dataset_size = 0
-        for batch_id, batch in enumerate(self.eval_loader):
-            data, target = batch
-            dataset_size += data.size()[0]
-
-            if torch.cuda.is_available():
-                data = data.cuda()
-                target = target.cuda()
-
-            output = self.model(data)
-
-            # print(output)
-
-            total_loss += torch.nn.functional.cross_entropy(output, target,
-                                                            reduction='sum').item()  # sum up batch loss
-            pred = output.data.max(1)[1]  # get the index of the max log-probability
-            correct += pred.eq(target.data.view_as(pred)).cpu().sum().item()
-
-        acc = 100.0 * (float(correct) / float(dataset_size))
-        total_l = total_loss / dataset_size
-
-        return acc, total_l
-
     def start_weight_share_protect_train(self):
         trainloader = torch.utils.data.DataLoader(
             Mydataset_numpy_client_UDK(mode='train', dataset=self.dataset_path, conf=self.conf, ID=4),
@@ -221,45 +190,36 @@ class Train(object):
         self.accs = self.server.accs
         self.losses = self.server.losses
 
-    def predict(self,save_path):
-        device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        # model = ResNet18()
-        model = torch.load(save_path, map_location=torch.device('cpu'))
+    def predict(self,model_path,pchoice,image_path=None,save_path=None):
 
-        # model=torch.load(save_path)
-        # model.load_state_dict(torch.load(save_path))
+        if  pchoice==1:
+            #表示我只想要做评估，用自己已有的eval_dataloader做评估
+            acc,loss=utils.eval(model_path,self.eval_loader)
+            return acc,loss
 
-        # GPU 模式
-        model = model.to(device)  # 扔到GPU中
-        # 假设 model_ft 是你的模型实例
-        # model = torch.load(save_path)
+        elif pchoice==2:
+            accuracy, average_loss, images, predicted_labels,true_labels,images_name=utils.predict_and_evaluate(model_path,dataset_folder='./data/cifar10_png')
+            utils.show_images(images,true_labels,predicted_labels, 25)
 
-        classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
+            if save_path:
+                if not os.path.exists(directory):
+                    os.makedirs(directory)
+                # 将列表转换为字典
+                data_dict = dict(zip(images_name, predicted_labels))
 
-        model.eval()
+                # 保存为 JSON 文件
+                with open(save_path, 'w') as f:
+                    json.dump(data_dict, f)
 
-        total_loss = 0.0
-        correct = 0
-        dataset_size = 0
-        for batch_id, batch in enumerate(self.eval_loader):
-            data, target = batch
-            dataset_size += data.size()[0]
+            return accuracy,average_loss
 
-            if torch.cuda.is_available():
-                data = data.cuda()
-                target = target.cuda()
+        elif pchoice==3:
+            if not image_path:
+                print("请输入你的图片的位置")
+            predict_label,image,true_label=utils.predict_image(image_path=image_path,model_path=model_path)
+            utils.show_image(image, predict_label,true_label)
+            return predict_label
 
-            output = model(data)
-
-            total_loss += torch.nn.functional.cross_entropy(output, target,
-                                                            reduction='sum').item()  # sum up batch loss
-            pred = output.data.max(1)[1]  # get the index of the max log-probability
-            correct += pred.eq(target.data.view_as(pred)).cpu().sum().item()
-
-        acc = 100.0 * (float(correct) / float(dataset_size))
-        total_l = total_loss / dataset_size
-
-        return acc, total_l
 
 
 def main():
