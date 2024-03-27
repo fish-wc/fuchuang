@@ -111,7 +111,7 @@ if __name__ == '__main__':
         print(f"正在启动编号为{node_id}的client...")
         trainer.start_differential_privacy_train()
 
-    elif choice ==2 :
+    elif choice ==2 :  ### 先不管
         print("同态加密算法保护情况下开始训练")
         print(f"正在启动编号为{node_id}的client...")
         trainer.start_homomorphic_encryption_train()
@@ -145,10 +145,11 @@ if __name__ == '__main__':
     elif choice==6:
         model_path="./mymodel/vgg16.pth"
         if pchoice==1:
-            # 这里只是用来测试的
+            # 这里只是用来测试的，只是评估
             acc, loss = trainer.predict(model_path,pchoice)
             print("accuracy:",acc,"loss:",loss)
         elif pchoice==2:
+            # 可以下载json文件，还可以绘制图。
             acc,loss=trainer.predict(model_path,pchoice,save_path=conf["save_json"])
             print("accuracy:",acc,"loss:",loss)
         elif pchoice==3:
@@ -161,7 +162,7 @@ if __name__ == '__main__':
             values = utils.load_json(conf["save_json"])
             utils.plot_category(values)
         elif pchoice==5:
-            content="你觉得我帅吗？"
+            content="你觉得一个人一顿饭能吃多少"
             response=mo.myChatGPT(content)
             print(response)
 

@@ -17,7 +17,8 @@ def myChatGPT(content):
     ### 需要在这个位置加一个模块，初始化GPT
     init=readtxt()
 
-    end='请你基于以上文档的内容，回答我的问题'
+    end='请你根据我所提供的关于联邦学习的内容，回答我的问题'
+    # end="请你根据我关于我们web系统的使用说明，回答我的一些问题。"
     content=init+content+end
 
     client = OpenAI(api_key='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')

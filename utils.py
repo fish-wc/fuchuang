@@ -146,8 +146,9 @@ def show_images(myimages, true_labels, predicted_labels,num_images=25):
         # 使用标签索引从classes获取对应的类别名称
         true_class_name = classes[true_labels[i]]
         predict_class_name=classes[predict_labels[i]]
-        plt.title(f"True:{true_class_name} ({true_labels[i]}),Predict:{predict_class_name}", fontsize=11)
+        plt.title(f"True:{true_class_name} ({true_labels[i]}),Predict:{predict_class_name}", fontsize=10)
     plt.tight_layout()
+    plt.savefig('./data/figures/show_pchoice2.png',dpi=300)
     plt.show()
 
 
@@ -159,7 +160,8 @@ def show_image(image,predict_label,true_label):
     # 使用标签索引从classes获取对应的类别名称
     predict_class_name=classes[predict_label]
     true_label_name=classes[true_label]
-    plt.title(f"Predict:{predict_class_name},label({predict_label}),True:{true_label_name},label({true_label})", fontsize=11)
+    plt.title(f"Predict:{predict_class_name},label({predict_label}),True:{true_label_name},label({true_label})", fontsize=10)
+    plt.savefig("./data/figures/show_oneimage.png",dpi=300)
     plt.show()
 
 def predict_image(image_path, model_path):
@@ -216,6 +218,7 @@ def plot_category(values):
     plt.ylabel('Count')
     plt.title('Count of Each Category in CIFAR-10 Prediction')
     plt.xticks(classes, ['plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck'])
+    plt.savefig('.\\data\\figures\\category.png',dpi=300)
     plt.show()
 
 if __name__=='__main__':
