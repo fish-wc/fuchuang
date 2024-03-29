@@ -27,7 +27,7 @@ the return data format is torch.tensor(torch.FloatTensor)
 
 
 class Mydataset_numpy_server_UDK(Dataset):
-    def __init__(self, mode, dataset,conf):
+    def __init__(self, mode, dataset):
         self.png_label_list_train = []
         self.png_label_list_test = []
         # mode:"train" or "test"

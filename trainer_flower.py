@@ -1,3 +1,5 @@
+import torch
+
 from server_flower import *
 from norm_client_flower import *
 import datasets2
@@ -7,14 +9,20 @@ from homomorphic_encryption.homomorphic_encryption_client_flower import *
 
 from xor_and_ndb.xndb_client_flower import *
 from pputl_demo.pputl_client_flower import *
-from weight_share_protect.User_UDK import *
+from weight_share_protect.User_UDK_flower import *
 from weight_share_protect.Mydataset_for_numpy_client_UDK import *
 from weight_share_protect.Mydataset_for_numpy_server_UDK import *
 import argparse
-import subprocess
-import threading
 
-model_path = "./models/global_model"  # 假设你想将模型保存在这里
+
+import utils
+
+# import sys
+# sys.path.append("./all_models")
+
+from all_models.resnet_total import ResNet18
+
+model_path = "./mymodels/global_model"  # 假设你想将模型保存在这里
 directory = os.path.dirname(model_path)
 # 如果目录不存在，创建它
 if not os.path.exists(directory):
@@ -27,6 +35,7 @@ class Train(object):
     def __init__(self, conf, choice,node_id):
         self.conf = conf
         self.node_id=node_id
+
         if choice == 2:
             pca = PCA(n_components=30)
 
@@ -44,6 +53,7 @@ class Train(object):
                 Mydataset_numpy_server_UDK(mode='test', dataset=self.dataset_path),
                 batch_size=self.conf["batch_size"], shuffle=True, num_workers=8, pin_memory=True)
             self.server = Server(self.conf, self.global_testloader, choice)
+
 
         else:
             self.train_datasets, self.eval_datasets = datasets2.get_dataset("data/", self.conf["type"], choice,subset_size=1000)
@@ -78,7 +88,7 @@ class Train(object):
         self.accs = self.server.accs
         self.losses = self.server.losses
 
-        print("results:",self.eval(model_path))
+        # print("results:",self.eval(model_path))
 
     def start_differential_privacy_train(self):
         # 实例化客户端
@@ -92,7 +102,7 @@ class Train(object):
         self.accs = self.server.accs
         self.losses = self.server.losses
 
-        print("results:", self.eval(model_path))
+        # print("results:", self.eval(model_path))
 
     def start_homomorphic_encryption_train(self):
         #这里需要注意一下，跟原来是一样的
@@ -133,7 +143,7 @@ class Train(object):
             self.accs.append(acc)
             self.losses.append(loss)
 
-            print("Epoch %d, acc: %f\n" % (e, acc))
+            # print("Epoch %d, acc: %f\n" % (e, acc))
 
     def start_xndb_train(self):
         # 实例化客户端
@@ -148,7 +158,7 @@ class Train(object):
         self.accs = self.server.accs
         self.losses = self.server.losses
 
-        print("results:", self.eval(model_path))
+        # print("results:", self.eval(model_path))
 
     def start_pputl_client_train(self,G):
         train_dataset_size = len(self.train_datasets)
@@ -163,39 +173,53 @@ class Train(object):
         self.accs = self.server.accs
         self.losses = self.server.losses
 
-        print("results:", self.eval(model_path))
+        # print("results:", self.eval(model_path))
 
-    def eval(self,model_path):
-        # self.model=models.get_model(self.conf["model_name"])
-        global_epochs=self.conf["global_epochs"]-1
-        save_model_path=model_path+f"{global_epochs}.pth"
-        self.model=torch.load(save_model_path)
-        # 将模型设置为评估模式，这对于推理很重要
-        self.model.eval()
-        total_loss = 0.0
-        correct = 0
-        dataset_size = 0
-        for batch_id, batch in enumerate(self.eval_loader):
-            data, target = batch
-            dataset_size += data.size()[0]
+    def start_weight_share_protect_train(self):
+        trainloader = torch.utils.data.DataLoader(
+            Mydataset_numpy_client_UDK(mode='train', dataset=self.dataset_path, conf=self.conf, ID=4),
+            batch_size=self.conf["batch_size"], shuffle=True)
+        client=User_UDK(self.conf, self.server.global_model, trainloader,self.global_testloader, self.node_id)
 
-            if torch.cuda.is_available():
-                data = data.cuda()
-                target = target.cuda()
+        self.clients.append(client)
 
-            output = self.model(data)
+        # 启动客户端口服务器
+        to_client = client.to_client()
+        fl.client.start_client(server_address=self.conf["address"], client=to_client)
 
-            # print(output)
+        self.accs = self.server.accs
+        self.losses = self.server.losses
 
-            total_loss += torch.nn.functional.cross_entropy(output, target,
-                                                            reduction='sum').item()  # sum up batch loss
-            pred = output.data.max(1)[1]  # get the index of the max log-probability
-            correct += pred.eq(target.data.view_as(pred)).cpu().sum().item()
+    def predict(self,model_path,pchoice,image_path=None,save_path=None):
 
-        acc = 100.0 * (float(correct) / float(dataset_size))
-        total_l = total_loss / dataset_size
+        if  pchoice==1:
+            #表示我只想要做评估，用自己已有的eval_dataloader做评估
+            acc,loss=utils.eval(model_path,self.eval_loader)
+            return acc,loss
 
-        return acc, total_l
+        elif pchoice==2:
+            accuracy, average_loss, images, predicted_labels,true_labels,images_name=utils.predict_and_evaluate(model_path,dataset_folder='./data/cifar10_png')
+            utils.show_images(images,true_labels,predicted_labels, 25)
+
+            if save_path:
+                if not os.path.exists(directory):
+                    os.makedirs(directory)
+                # 将列表转换为字典
+                data_dict = dict(zip(images_name, predicted_labels))
+
+                # 保存为 JSON 文件
+                with open(save_path, 'w') as f:
+                    json.dump(data_dict, f)
+
+            return accuracy,average_loss
+
+        elif pchoice==3:
+            if not image_path:
+                print("请输入你的图片的位置")
+            predict_label,image,true_label=utils.predict_image(image_path=image_path,model_path=model_path)
+            utils.show_image(image, predict_label,true_label)
+            return predict_label
+
 
 
 def main():

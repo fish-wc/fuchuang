@@ -1,5 +1,5 @@
 import math
-from all_models.resnet50 import *
+from all_models.resnet_total import *
 from all_models.densenet import *
 from all_models.dla_simple import *
 from all_models.googlenet import *

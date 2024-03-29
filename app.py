@@ -215,7 +215,7 @@ def train(data_1):
     # # 终止子进程
     # process.terminate()
 
-    count = 0;
+    count = 0
     emit('train_output', {'output': "开始训练......"})
     for line in process.stdout:
         count = count + 1

@@ -35,7 +35,15 @@ from flwr.server.strategy import FedAvg
 
 import os
 
-model_path = "./models/global_model"  # 假设你想将模型保存在这里
+from all_models.resnet_total import *
+from all_models.densenet import *
+from all_models.dla_simple import *
+from all_models.googlenet import *
+from all_models.mobilenet import *
+from all_models.vgg import *
+
+
+model_path = "./mymodels/global_model"  # 假设你想将模型保存在这里
 directory = os.path.dirname(model_path)
 
 # 如果目录不存在，创建它
@@ -99,7 +107,35 @@ class Server(object):
             self.global_model = models.get_model(self.conf["model_name"])
             self.eval_loader = torch.utils.data.DataLoader(eval_dataset, batch_size=self.conf["batch_size"],
                                                            shuffle=True)
-
+        # elif choice == 5:
+        #     if self.conf["model_name"]=="resnet50":
+        #         self.global_model = ResNet50()
+        #     elif self.conf["model_name"]=="densenet":
+        #         self.global_model = DenseNet121()
+        #     elif self.conf["model_name"]=="simpledla":
+        #         self.global_model = SimpleDLA()
+        #     elif self.conf["model_name"]=="googlenet":
+        #         self.global_model = GoogLeNet()
+        #     elif self.conf["model_name"]=="mobilenet":
+        #         self.global_model = MobileNet()
+        #     else:
+        #         self.global_model = VGG()
+        #     self.dataset_path = "weight_share_protect/UDK_fl_add_mul_sort"
+        #     self.global_testloader = eval_dataset
+        # else:
+        #     if self.conf["model_name"] == "resnet50":
+        #         self.global_model = ResNet50()
+        #     elif self.conf["model_name"] == "densenet":
+        #         self.global_model = DenseNet121()
+        #     elif self.conf["model_name"] == "simpledla":
+        #         self.global_model = SimpleDLA()
+        #     elif self.conf["model_name"] == "googlenet":
+        #         self.global_model = GoogLeNet()
+        #     elif self.conf["model_name"] == "mobilenet":
+        #         self.global_model = MobileNet()
+        #     else:
+        #         self.global_model = VGG()
+        #     self.eval_loader = torch.utils.data.DataLoader(eval_dataset, batch_size=self.conf["batch_size"])
         elif self.choice == 5:
             self.global_model = models.get_model(self.conf["model_name"])
             self.dataset_path = "weight_share_protect/UDK_fl_add_mul_sort"
@@ -172,7 +208,12 @@ class Server(object):
         total_loss = 0.0
         correct = 0
         dataset_size = 0
+        cnt=0
+        random_int = np.random.randint(2, 5)
         for batch_id, batch in enumerate(self.eval_loader):
+            cnt = cnt + 1
+            if cnt == random_int:
+                break
             data, target = batch
             dataset_size += data.size()[0]
 
@@ -200,7 +241,13 @@ class Server(object):
         criterion = nn.CrossEntropyLoss()
         loss = 0
         acc = 0.0
+        cnt=0
+        random_int = np.random.randint(2, 5)
         for (images, labels) in self.eval_loader:
+            cnt = cnt + 1
+            if cnt == random_int:
+                break
+
             images = images.to(torch.float32).to(device)
             labels = labels.to(device).squeeze(1)
 
@@ -226,7 +273,12 @@ class Server(object):
         total_loss = 0.0
         correct = 0
         dataset_size = 0
+        cnt=0
+        random_int = np.random.randint(2, 5)
         for i, _ in enumerate(range(num_batches)):
+            cnt = cnt + 1
+            if cnt == random_int:
+                break
             z_ = torch.randn(batch_size, 128).to(device)
             y_d = (torch.rand(batch_size, 1) * 10).type(torch.LongTensor).to(device)
             y_label_ = torch.zeros(batch_size, 10).to(device)
@@ -259,10 +311,14 @@ class Server(object):
                 config: Dict[str, fl.common.Scalar],
         ) -> Optional[Tuple[float, Dict[str, fl.common.Scalar]]]:
             # Update model with the latest parameters
+
             params_dict = zip(model.state_dict().keys(), parameters)
             state_dict = OrderedDict({k: torch.tensor(v) for k, v in params_dict})
             self.global_model.load_state_dict(state_dict, strict=True)
-
+            if self.conf['is_increment']:
+                models_path = self.conf['increment']
+                # model=torch.load(models_path)
+                self.global_model = torch.load(models_path, map_location=torch.device('cpu'))
             # 这里是细节
             if self.choice ==3 :
                 accuracy,loss = self.model_eval_xndb()
@@ -274,9 +330,11 @@ class Server(object):
             self.accs.append(accuracy)
             self.losses.append(loss)
 
+
             save_model_path = model_path + f"{self.cnt}.pth"
             torch.save(self.global_model, save_model_path)
-            print(f"Model saved to {save_model_path} for round {self.cnt}")
+            # print(f"Model saved to {save_model_path} for round {self.cnt}")
+
             self.cnt = self.cnt + 1
 
             return loss, {"accuracy": accuracy}
@@ -312,7 +370,15 @@ class Server(object):
 
     def start_server(self):
         # Define strategy
-        model_parameters = [val.cpu().numpy() for _, val in self.global_model.state_dict().items()]
+
+        if self.conf['is_increment']:
+            models_path=self.conf['increment']
+            # model=torch.load(models_path)
+            model = torch.load(models_path, map_location=torch.device('cpu'))
+            model_parameters = [val.cpu().numpy() for _, val in model.state_dict().items()]
+        else:
+            model_parameters = [val.cpu().numpy() for _, val in self.global_model.state_dict().items()]
+
         strategy=fl.server.strategy.FedAvg(
             fraction_fit=1.0,
             fraction_evaluate=1.0,

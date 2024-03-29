@@ -1,4 +1,4 @@
-from trainer_flower_Thread import *
+
 import json
 import argparse
 from plot_acc import *
@@ -19,12 +19,12 @@ from xor_and_ndb import xor,ndb
 from weight_share_protect.matrix_add_mul_sort_transform_using_different_key import matrix_add_mul_sort
 from pputl_demo.target_model import *
 warnings.filterwarnings("ignore", category=UserWarning)
-
+import utils
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
 import os
-
+import myopenai as mo
 
 
 
@@ -63,12 +63,18 @@ if __name__ == '__main__':
     parser.add_argument('--min_available_clients',type=int,default=2,help="min available clients")
     parser.add_argument('--node_id',type=int,default=1,help="client's id")
     parser.add_argument('--value_steps',type=int,default=5,help="number of clients to evaluate")
+    parser.add_argument('--increment',type=str,default="./mymodel/resnet50.pth",help="the model you want to train")
+    parser.add_argument('--is_increment',type=bool,default=True,help="do you need increment?")
+    parser.add_argument('--pchoice',type=int,default=1,help="Which predict to use")
+    parser.add_argument('--save_json',type=str,default='./data/answer.json',help="Json to save")
     args = parser.parse_args()
 
     # 选择保护算法
     # 改进的生成
-    print("正常模式输入0；差分隐私输入1；同态加密输入2:负数据库输入3;改进的生成对抗网络输入4;共享权重模式协作学习输入5:")
+    print("正常模式输入0；差分隐私输入1；同态加密输入2:负数据库输入3;改进的生成对抗网络输入4;共享权重模式协作学习输入5;其他功能6:")
+    classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
     choice = args.choice
+    pchoice=args.pchoice
     node_id=args.node_id
     conf = {"choice": args.choice, "no_models": args.no_models, "model_name": args.model_name, "type": args.type,
             "global_epochs": args.global_epochs,
@@ -78,10 +84,10 @@ if __name__ == '__main__':
             "eta": args.eta, "alpha": args.alpha, "poison_label": args.poison_label,
             "poisoning_per_batch": args.poisoning_per_batch, "prop": args.prop, "root": args.root,
             "address":args.address ,"min_available_clients": args.min_available_clients,"node_id":args.node_id #这里又加了两排
-            ,"value_steps":args.value_steps,
+            ,"value_steps":args.value_steps,"increment":args.increment,"is_increment":args.is_increment,
+            "pchoice":args.pchoice,"save_json":args.save_json,
             }
-    model_path = "./models/global_model"  # 假设你想将模型保存在这里
-    directory = os.path.dirname(model_path)
+
 
     trainer = Train(conf, choice,node_id)
     print("start training!")
@@ -91,6 +97,7 @@ if __name__ == '__main__':
         trainer.start_server()
         print("服务器训练结束")
 
+        # 在这里获取训练的评价指标
         acc_loss(trainer.accs, trainer.losses)
 
     elif choice == 0:
@@ -104,7 +111,7 @@ if __name__ == '__main__':
         print(f"正在启动编号为{node_id}的client...")
         trainer.start_differential_privacy_train()
 
-    elif choice ==2 :
+    elif choice ==2 :  ### 先不管
         print("同态加密算法保护情况下开始训练")
         print(f"正在启动编号为{node_id}的client...")
         trainer.start_homomorphic_encryption_train()
@@ -131,10 +138,33 @@ if __name__ == '__main__':
         print(f"正在启动编号为{node_id}的client...")
         trainer.start_pputl_client_train(G)
 
-    # elif choice == 5:
-    #  #   matrix_add_mul_sort(user_num=conf["no_models"])
-    #     trainer.weight_share_protect_train()
+    elif choice == 5:
+     #   matrix_add_mul_sort(user_num=conf["no_models"])
+        trainer.start_weight_share_protect_train()
 
+    elif choice==6:
+        model_path="./mymodel/vgg16.pth"
+        if pchoice==1:
+            # 这里只是用来测试的，只是评估
+            acc, loss = trainer.predict(model_path,pchoice)
+            print("accuracy:",acc,"loss:",loss)
+        elif pchoice==2:
+            # 可以下载json文件，还可以绘制图。
+            acc,loss=trainer.predict(model_path,pchoice,save_path=conf["save_json"])
+            print("accuracy:",acc,"loss:",loss)
+        elif pchoice==3:
+            label=trainer.predict(model_path=model_path,pchoice=pchoice,image_path='./data/cifar10_png/0/52.png')
+            name=classes[label]
+            print(f"该图片的预测结果是{name},label({label})")
+
+        elif pchoice==4:
+            #画图的
+            values = utils.load_json(conf["save_json"])
+            utils.plot_category(values)
+        elif pchoice==5:
+            content="你觉得一个人一顿饭能吃多少"
+            response=mo.myChatGPT(content)
+            print(response)
 
 
 
