@@ -6,6 +6,7 @@ import warnings
 from pputl_demo import pputl
 from xor_and_ndb import xor, ndb
 from weight_share_protect.matrix_add_mul_sort_transform_using_different_key import matrix_add_mul_sort
+from weight_share_protect.matrix_mul_transform_using_different_key import matrix_sort
 from pputl_demo.target_model import *
 
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -16,13 +17,13 @@ if __name__ == '__main__':
     # 预置超参数
     parser = argparse.ArgumentParser(description='Federated Learning')
     parser.add_argument('--choice', type=int, required=True, help='choice')
-    parser.add_argument('--no_models', type=int, default=10, help='clients_num')
+    parser.add_argument('--no_models', type=int, default=2, help='clients_num')
     parser.add_argument('--model_name', type=str, default="mobilenet", help='model')
     parser.add_argument('--type', type=str, default="cifar", help='dataset_name')
-    parser.add_argument('--global_epochs', type=int, default=1, help='global_epochs')
+    parser.add_argument('--global_epochs', type=int, default=10, help='global_epochs')
     parser.add_argument('--local_epochs', type=int, default=3, help='local_epochs')
-    parser.add_argument('--k', type=int, default=3, help='train_clients_num')
-    parser.add_argument('--batch_size', type=int, default=16, help='batch_size')
+    parser.add_argument('--k', type=int, default=1, help='train_clients_num')
+    parser.add_argument('--batch_size', type=int, default=64, help='batch_size')
     # parser.add_argument('--client_batchsize', type=int, default=100, help='weight_share_protect_client_batchsize')
     # parser.add_argument('--global_batchsize', type=int, default=500, help='weight_share_protect_global_batchsize')
     parser.add_argument('--lr', type=float, default=0.1, help='learning_rate')
@@ -72,11 +73,11 @@ if __name__ == '__main__':
         G.eval()
         trainer.pputl_client_train(G)
     elif choice == 5:
-        matrix_add_mul_sort(user_num=conf["no_models"])
+        #matrix_sort()
         trainer.weight_share_protect_train()
     else:
         trainer.homomorphic_encryption_train()
-    acc_loss(trainer.accs, trainer.losses)
+    print(trainer.accs, trainer.losses)
 
 
 

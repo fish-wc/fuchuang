@@ -27,7 +27,7 @@ class Server(object):
             self.eval_y = eval_dataset[1]
         elif choice == 5:
             if self.model_name=="resnet50":
-                self.global_model = ResNet50()
+                self.global_model = ResNet18()
             elif self.model_name=="densenet":
                 self.global_model = DenseNet121()
             elif self.model_name=="simpledla":
