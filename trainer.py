@@ -27,9 +27,9 @@ class Train(object):
             np.array(self.eval_datasets.targets))
             self.server = Server(self.conf, self.eval_datasets, choice)
         elif choice == 5:
-            self.dataset_path = "weight_share_protect/UDK_fl_add_mul_sort"
+            self.dataset_path = "weight_share_protect/UDK_fl_add_mul_sort2/mul10_user_number_2"
             self.global_testloader = torch.utils.data.DataLoader(
-                Mydataset_numpy_server_UDK(mode='test', dataset=self.dataset_path, conf=self.conf),
+                Mydataset_numpy_server_UDK(mode='test', dataset=self.dataset_path),
                 batch_size=self.conf["batch_size"])
             self.server = Server(self.conf, self.global_testloader, choice)
 
@@ -71,10 +71,8 @@ class Train(object):
     def weight_share_protect_train(self):
 
         for c in range(self.conf["no_models"]):
-            trainloader = torch.utils.data.DataLoader(
-                Mydataset_numpy_client_UDK(mode='train', dataset=self.dataset_path, conf=self.conf, ID=4),
-                batch_size=self.conf["batch_size"], shuffle=True)
-
+            datasets = Mydataset_numpy_client_UDK(mode='train', dataset=self.dataset_path, conf=self.conf,ID=c + 1)
+            trainloader = torch.utils.data.DataLoader(datasets, batch_size=self.conf["batch_size"], shuffle=True)
             u = User_UDK(self.conf, self.server.global_model, trainloader, c)
             self.clients.append(u)
 

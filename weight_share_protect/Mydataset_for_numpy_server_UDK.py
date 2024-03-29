@@ -65,12 +65,12 @@ class Mydataset_numpy_server_UDK(Dataset):
         #
         # # 关闭文件
         # csv_file.close()
-        csv_file = open(self.dataset + "/user" + str(4) + '/test.csv', 'r')
+        csv_file = open(self.dataset + "/user" + str(1) + '/test.csv', 'r')
         csv_file_test = csv.reader(csv_file)
 
         # 直接处理所有的测试数据，不需要计算行数和重新定位到文件开始
         for line in csv_file_test:
-            self.png_label_list_test.append(["user" + str(4) + "/test/" + line[0], int(line[1])])
+            self.png_label_list_test.append(["user" + str(1) + "/test/" + line[0], int(line[1])])
 
         # 关闭文件
         csv_file.close()
