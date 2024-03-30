@@ -62,6 +62,7 @@ def eval_diseases(model_path,eval_loader):
             data = data.cuda()
             target = target.to(device).squeeze(1)
 
+        target.squeeze(1)
         output = model(data)
 
         total_loss += torch.nn.functional.cross_entropy(output, target,
@@ -73,6 +74,7 @@ def eval_diseases(model_path,eval_loader):
     total_l = total_loss / dataset_size
 
     return acc, total_l
+
 
 # 保存CIFAR-10的图片到指定目录，提前保存好了,所以不封装到其他地方
 def save_cifar10_images(image_label_pairs, root_dir):
