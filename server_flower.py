@@ -6,6 +6,8 @@ from homomorphic_encryption import paillier
 import numpy as np
 import torch.nn as nn
 from weight_share_protect.Mydataset_for_numpy_server_UDK import *
+from pputl_demo.pputl_client_flower import *
+
 
 from typing import List, Tuple
 
@@ -17,8 +19,6 @@ import datasets2
 from typing import Dict, Optional, Tuple
 from collections import OrderedDict
 
-
-from trainer_flower_Thread import *
 import json
 import argparse
 from plot_acc import *
@@ -30,9 +30,6 @@ from pputl_demo.target_model import *
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-from flwr.server.strategy import FedAvg
-
-
 import os
 
 from all_models.resnet_total import *
@@ -42,53 +39,19 @@ from all_models.googlenet import *
 from all_models.mobilenet import *
 from all_models.vgg import *
 
+# 加载自己的功能包
+import utils.model_save_load as um
 
-model_path = "./mymodels/global_model"  # 假设你想将模型保存在这里
-directory = os.path.dirname(model_path)
 
-# 如果目录不存在，创建它
-if not os.path.exists(directory):
-    os.makedirs(directory)
-
-# import numpy as np
-# from collections import OrderedDict
-# import torch
-# from flwr.common import Parameters
-
-# class SaveModelStrategy(FedAvg):
-#     def __init__(self, model_name:str,model_path: str, *args, **kwargs):
-#         super().__init__(*args, **kwargs)
-#         self.model=models.get_model(model_name)
-#         self.model_path = model_path
-#         self.cnt=0
-#
-#     def aggregate_fit(self, rnd, results, failures):
-#         aggregated_parameters = super().aggregate_fit(rnd, results, failures)
-#
-#         if aggregated_parameters is not None:
-#             # 将Flower的Parameters对象转换为PyTorch的状态字典
-#             # state_dict = parameters_to_torch(aggregated_parameters)
-#             self.model.train()
-#             # 使用转换函数
-#             params_dict = zip(self.model.state_dict().keys(), aggregated_parameters)
-#             state_dict = OrderedDict({k: torch.tensor(v) for k, v in params_dict})
-#
-#             # 加载聚合后的参数到模型
-#             self.model.load_state_dict(state_dict, strict=True)
-#             # 保存模型参数
-#             save_model_path=self.model_path+f"{self.cnt}.pth"
-#             self.cnt=self.cnt+1
-#             torch.save(self.model, save_model_path)
-#             print(f"Model saved to {self.model_path} for round {rnd}")
-#         return aggregated_parameters
 
 class Server(object):
     public_key, private_key = paillier.generate_paillier_keypair(n_length=1024)
 
     def __init__(self, conf, eval_dataset, choice):
 
-        self.conf = conf
-        self.choice=choice
+        self.conf = conf #基础配置
+        self.choice=choice # 算法选项
+        self.best_val_loss = float('inf') #用来保存最好的一个模型
 
         if self.choice == 2:
             self.global_model = models.LR_Model(public_key=Server.public_key, w_size=self.conf["feature_num"] + 1)
@@ -136,11 +99,13 @@ class Server(object):
         #     else:
         #         self.global_model = VGG()
         #     self.eval_loader = torch.utils.data.DataLoader(eval_dataset, batch_size=self.conf["batch_size"])
+
         elif self.choice == 5:
             self.global_model = models.get_model(self.conf["model_name"])
             self.dataset_path = "weight_share_protect/UDK_fl_add_mul_sort"
             self.global_testloader = eval_dataset
         else:
+            # norm状态下的配置
             self.global_model = models.get_model(self.conf["model_name"])
             self.eval_loader = torch.utils.data.DataLoader(eval_dataset, batch_size=self.conf["batch_size"],
                                                            shuffle=True)
@@ -150,8 +115,7 @@ class Server(object):
         self.accs = []
         self.losses = []
 
-        self.cnt=0
-
+    # 同态加密的聚合算法
     def model_aggregate_homomorphic_encryption(self, weight_accumulator):
 
         for id, data in enumerate(self.global_model.encrypt_weights):
@@ -159,6 +123,7 @@ class Server(object):
 
             self.global_model.encrypt_weights[id] = self.global_model.encrypt_weights[id] + update_per_layer
 
+    # 同态加密下的评估算法
     def model_eval_homomorphic_encryption(self):
         total_loss = 0.0
         correct = 0
@@ -201,9 +166,6 @@ class Server(object):
     #用来做测评的
     def model_eval(self):
         self.global_model.eval()
-        # print("\n\nstart to model evaluation......")
-        # for name, layer in self.global_model.named_parameters():
-        #	print(name, "->", torch.mean(layer.data))
 
         total_loss = 0.0
         correct = 0
@@ -222,8 +184,6 @@ class Server(object):
                 target = target.cuda()
 
             output = self.global_model(data)
-
-            # print(output)
 
             total_loss += torch.nn.functional.cross_entropy(output, target,
                                                             reduction='sum').item()  # sum up batch loss
@@ -265,9 +225,6 @@ class Server(object):
     def model_eval_pputl(self, G):
         self.global_model.eval()
         criterion = nn.CrossEntropyLoss()
-        # print("\n\nstart to model evaluation......")
-        # for name, layer in self.global_model.named_parameters():
-        #	print(name, "->", torch.mean(layer.data))
         batch_size = self.conf["batch_size"]
         num_batches = math.ceil(self.eval_dataset_size / batch_size)
         total_loss = 0.0
@@ -301,10 +258,6 @@ class Server(object):
 
     # 用来测评的
     def get_evaluate_fn(self,model: torch.nn.Module):
-        """Return an evaluation function for server-side evaluation."""
-
-        #这里有个细节需要注意一下
-        # The `evaluate` function will be called after every round
         def evaluate(
                 server_round: int,
                 parameters: fl.common.NDArrays,
@@ -317,7 +270,6 @@ class Server(object):
             self.global_model.load_state_dict(state_dict, strict=True)
             if self.conf['is_increment']:
                 models_path = self.conf['increment']
-                # model=torch.load(models_path)
                 self.global_model = torch.load(models_path, map_location=torch.device('cpu'))
             # 这里是细节
             if self.choice ==3 :
@@ -325,21 +277,22 @@ class Server(object):
             if self.choice ==4:
                 accuracy,loss = self.model_eval_pputl(self.G)
             else:
+                # norm状态下的评估
                 accuracy,loss = self.model_eval()
 
             self.accs.append(accuracy)
             self.losses.append(loss)
 
-
-            save_model_path = model_path + f"{self.cnt}.pth"
-            torch.save(self.global_model, save_model_path)
-            # print(f"Model saved to {save_model_path} for round {self.cnt}")
-
-            self.cnt = self.cnt + 1
+            # 保存最好的模型，如果这个epoch的验证损失比之前所有epoch的都要低，那么保存模型
+            if loss < self.best_val_loss:
+                self.best_val_loss = loss
+                model_name=self.conf["model_save_name"]+'_best'
+                um.save_model_with_same_name(self.global_model,self.conf["model_save_path"],model_name)
 
             return loss, {"accuracy": accuracy}
 
         return evaluate
+
     #这里是基础配置部分
     def fit_config(self,server_round: int):
         """Return training configuration dict for each round.
@@ -349,7 +302,7 @@ class Server(object):
         """
         return self.conf
 
-
+    # 这里是norm状态下的权重聚合，以及参数数值的聚合
     def weighted_average(self, metrics: List[Tuple[int, Metrics]]) -> Metrics:
         # Multiply accuracy of each client by number of examples used
         accuracies = [num_examples * m["accuracy"] for num_examples, m in metrics]
@@ -358,6 +311,7 @@ class Server(object):
         # Aggregate and return custom metric (weighted average)
         return {"accuracy": sum(accuracies) / sum(examples)}
 
+    # 评价基本参数
     def evaluate_config(self, server_round: int = 5):
         """Return evaluation configuration dict for each round.
 
@@ -368,6 +322,7 @@ class Server(object):
         val_steps=self.conf["value_steps"]
         return {"val_steps": val_steps}
 
+    # 启动本地服务器
     def start_server(self):
         # Define strategy
 
@@ -398,26 +353,3 @@ class Server(object):
             strategy=strategy,
         )
 
-if __name__ == "__main__":
-    ''' 如下是server的编写测试'''
-    """Load data, start CifarClient."""
-    conf = {"model_name": "resnet50", "no_models": 3, "type": "cifar", "global_epochs": 3, "local_epochs": 3, "k": 3,
-            "batch_size": 8, "client_batchsize": 100, "global_batchsize": 500, "lr": 0.1, "momentum": 0.9,
-            "lambda": 0.1, "dp": True, "C": 1000, "sigma": 0.01, "q": 0.2, "W": 2, "feature_num": 30, "eta": 2,
-            "alpha": 1.0,
-            "poison_label": 2, "poisoning_per_batch": 4, "prop": 0.6, "root": "ndb_cifar10_data/",
-            "address": "127.0.0.1:8080",
-            "min_available_clients": 2,
-            }
-    parser = argparse.ArgumentParser(description="Flower")
-    parser.add_argument("--node-id", type=int, default=1, choices=range(0, 10))
-    args = parser.parse_args()
-
-    train_datasets, eval_datasets = datasets2.get_dataset("data/", conf["type"], choice=0, subset_size=1000)
-
-    global_model = models.get_model(conf["model_name"])
-
-    server=Server(conf,eval_datasets,choice=0)
-    server.start_server()
-
-    print('server启动')

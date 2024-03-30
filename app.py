@@ -42,9 +42,6 @@ def attack(data_1):
         if count > 30:
             break
 
-
-    # time.sleep(10)
-
     result = {}
 
     if attack_type == 0:

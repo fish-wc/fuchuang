@@ -8,6 +8,17 @@ import os
 import torch.nn.functional as F
 from xor_and_ndb import XOR_pre
 
+# 导出医疗卫生数据集
+from medmnist import PathMNIST
+from medmnist import DermaMNIST
+from medmnist import OCTMNIST
+from medmnist import PneumoniaMNIST
+from medmnist import RetinaMNIST
+from medmnist import BreastMNIST
+from medmnist import BloodMNIST
+from medmnist import TissueMNIST
+from medmnist import OrganAMNIST
+from medmnist import ChestMNIST
 
 class custmResize:
     def __init__(self, size):
@@ -18,7 +29,6 @@ class custmResize:
         img = F.interpolate(img, (self.size, self.size))
         img = img.squeeze()
         return img
-
 
 class CustomDataset(Dataset):
     def __init__(self, data_root, transform=None):
@@ -40,40 +50,10 @@ class CustomDataset(Dataset):
 
         return image
 
+def get_dataset(dir, name, choice=None, subset_size=None,subsize_rate=None):
+    # 默认subsize_rate取值范围是（0，1）
 
-# # 使用自定义数据集
-# transform = transforms.Compose([transforms.ToTensor()])
-# data_root = 'path/to/your/dataset'  # 指定数据集路径
-# custom_dataset = CustomDataset(data_root, transform=transform)
-#
-# # 现在可以使用这个数据集了，例如在数据加载器中
-# from torch.utils.data import DataLoader
-#
-# data_loader = DataLoader(custom_dataset, batch_size=32, shuffle=True)
-
-# from torch.utils.data import random_split
-#
-# # 假设 custom_dataset 是您已经加载的完整数据集
-# dataset_size = len(custom_dataset)
-# train_size = int(0.8 * dataset_size)  # 例如，80% 作为训练集
-# test_size = dataset_size - train_size
-#
-# train_dataset, test_dataset = random_split(custom_dataset, [train_size, test_size])
-
-# from torch.utils.data import DataLoader
-#
-# # 为训练数据集创建 DataLoader
-# train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=2)
-#
-# # 为测试数据集创建 DataLoader
-# test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=2)
-
-
-def get_dataset(dir, name, choice=None, subset_size=None):
-    if name == 'mnist':
-        train_dataset = datasets.MNIST(dir, train=True, download=True, transform=transforms.ToTensor())
-        eval_dataset = datasets.MNIST(dir, train=False, transform=transforms.ToTensor())
-
+    # 如下是本次核心数据集，cifar10数据集
     if name == 'cifar':
         transform_train = transforms.Compose([
             transforms.RandomCrop(32, padding=4),
@@ -102,28 +82,106 @@ def get_dataset(dir, name, choice=None, subset_size=None):
             train_dataset = datasets.CIFAR10(dir, train=True, download=True, transform=transform_train)
             eval_dataset = datasets.CIFAR10(dir, train=False, transform=transform_test)
 
-    if subset_size is not None:
-        # 假设 total_size 是原始数据集的大小
-        train_size = len(train_dataset)  # 或 eval_dataset
-        eval_size = len(eval_dataset)
+        if subsize_rate is not None:
+            train_size = len(train_dataset)  # 或 eval_dataset
+            eval_size = len(eval_dataset)
 
-        # 生成一个从0到 total_size-1 的索引列表
-        indices_train = list(range(train_size))
-        indices_eval = list(range(eval_size))
+            # 生成一个从0到 total_size-1 的索引列表
+            indices_train = list(range(train_size))
+            indices_eval = list(range(eval_size))
 
-        # # 随机打乱索引
-        # random.shuffle(indices_train)
-        # random.shuffle(indices_eval)
+            # # 随机打乱索引
+            random.shuffle(indices_train)
+            random.shuffle(indices_eval)
 
-        # 从打乱的索引中取出前 subset_size 个创建子数据集
-        train_subset_indices = indices_train[:subset_size]
-        eval_subset_indices = indices_eval[:subset_size]
+            subset_size_train = int(train_size * subsize_rate)
+            subset_size_eval = int(eval_size * subsize_rate)
 
-        # 创建子数据集
-        train_dataset = Subset(train_dataset, train_subset_indices)
-        eval_dataset = Subset(eval_dataset, eval_subset_indices)
-    # train_dataset = Subset(train_dataset, list(range(subset_size)))
-    # eval_dataset = Subset(eval_dataset, list(range(subset_size)))
+            # 从打乱的索引中取出前 subset_size 个创建子数据集
+            train_subset_indices = indices_train[:subset_size_train]
+            eval_subset_indices = indices_eval[:subset_size_eval]
+
+            # 创建子数据集
+            train_dataset = Subset(train_dataset, train_subset_indices)
+            eval_dataset = Subset(eval_dataset, eval_subset_indices)
+
+            return train_dataset, eval_dataset
+
+        if subset_size is not None:
+            # 假设 total_size 是原始数据集的大小
+            train_size = len(train_dataset)  # 或 eval_dataset
+            eval_size = len(eval_dataset)
+
+            # 生成一个从0到 total_size-1 的索引列表
+            indices_train = list(range(train_size))
+            indices_eval = list(range(eval_size))
+
+            # # 随机打乱索引
+            # random.shuffle(indices_train)
+            # random.shuffle(indices_eval)
+
+            # 从打乱的索引中取出前 subset_size 个创建子数据集
+            train_subset_indices = indices_train[:subset_size]
+            eval_subset_indices = indices_eval[:subset_size]
+
+            # 创建子数据集
+            train_dataset = Subset(train_dataset, train_subset_indices)
+            eval_dataset = Subset(eval_dataset, eval_subset_indices)
+
+            return train_dataset, eval_dataset
+
+
+    # 如下是本次的辅助数据集，手写数字识别mnist数据集
+    elif name == 'mnist':
+        train_dataset = datasets.MNIST(dir, train=True, download=True, transform=transforms.ToTensor())
+        eval_dataset = datasets.MNIST(dir, train=False, transform=transforms.ToTensor())
+
+    transform = transforms.Compose([
+        transforms.ToTensor(),  # 将PIL图片转换为Tensor
+        # 根据需要可以加入其他转换，比如数据归一化等
+        # transforms.Normalize((0.5,), (0.5,))  # 例子：归一化
+    ])
+
+    # 如下是医疗数据集
+    if name=="PathMNIST":
+        train_dataset= PathMNIST(split='train', root="./data/medmnist_total",transform=transform, download=True)
+        eval_dataset= PathMNIST(split='test', root="./data/medmnist_total",transform=transform, download=True)
+
+    elif name=="DermaMNIST":
+        train_dataset = DermaMNIST(split='train', root="./data/medmnist_total", download=True)
+        eval_dataset = DermaMNIST(split='test', root="./data/medmnist_total", download=True)
+
+    elif name=="OCTMNIST":
+        train_dataset = OCTMNIST(split='train', root="./data/medmnist_total", download=True)
+        eval_dataset = OCTMNIST(split='test', root="./data/medmnist_total", download=True)
+
+    elif name=="PneumoniaMNIST":
+        train_dataset = PneumoniaMNIST(split='train', root="./data/medmnist_total", download=True)
+        eval_dataset = PneumoniaMNIST(split='test', root="./data/medmnist_total", download=True)
+
+    elif name=="RetinaMNIST":
+        train_dataset = RetinaMNIST(split='train', root="./data/medmnist_total", download=True)
+        eval_dataset =  RetinaMNIST(split='test', root="./data/medmnist_total", download=True)
+
+    elif name=="BreastMNIST":
+        train_dataset =BreastMNIST(split='train', root="./data/medmnist_total", download=True)
+        eval_dataset = BreastMNIST(split='test', root="./data/medmnist_total", download=True)
+
+    elif name=="BloodMNIST":
+        train_dataset = BloodMNIST(split='train', root="./data/medmnist_total", download=True)
+        eval_dataset = BloodMNIST(split='test', root="./data/medmnist_total", download=True)
+
+    elif name=="TissueMNIST":
+        train_dataset =TissueMNIST(split='train', root="./data/medmnist_total", download=True)
+        eval_dataset = TissueMNIST(split='test', root="./data/medmnist_total", download=True)
+
+    elif name=="OrganAMNIST":
+        train_dataset = OrganAMNIST(split='train', root="./data/medmnist_total", transform=transform,download=True)
+        eval_dataset = OrganAMNIST(split='test', root="./data/medmnist_total",transform=transform, download=True)
+
+    elif name=="ChestMNIST":
+        train_dataset =ChestMNIST(split='train', root="./data/medmnist_total", download=True)
+        eval_dataset = ChestMNIST(split='test', root="./data/medmnist_total", download=True)
 
     return train_dataset, eval_dataset
 

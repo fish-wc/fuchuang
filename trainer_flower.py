@@ -1,70 +1,63 @@
-import torch
-
+# 导入各个模块集成的部分
 from server_flower import *
-from norm_client_flower import *
-import datasets2
-from differential_privacy.differential_privacy_client_flower import *
-import random
-from homomorphic_encryption.homomorphic_encryption_client_flower import *
 
+from norm_client_flower import *
+from differential_privacy.differential_privacy_client_flower import *
+from homomorphic_encryption.homomorphic_encryption_client_flower import *
 from xor_and_ndb.xndb_client_flower import *
 from pputl_demo.pputl_client_flower import *
 from weight_share_protect.User_UDK_flower import *
 from weight_share_protect.Mydataset_for_numpy_client_UDK import *
 from weight_share_protect.Mydataset_for_numpy_server_UDK import *
-import argparse
 
+# 导入自己定义的功能包
+import datasets2
+import utils.utils as uu
+import utils.model_save_load as um
 
-import utils
-
-# import sys
-# sys.path.append("./all_models")
-
-from all_models.resnet_total import ResNet18
-
-model_path = "./mymodels/global_model"  # 假设你想将模型保存在这里
-directory = os.path.dirname(model_path)
-# 如果目录不存在，创建它
-if not os.path.exists(directory):
-    os.makedirs(directory)
+# 导入常用包
+import torch
+import random
 
 class Train(object):
-    '''
-    如下是没有采用多线程技术设计的，最终应该是要设计成这种形式
-    '''
+    # 如下是没有采用多线程技术设计的，最终应该是要设计成这种形式
+    # 集成了多个功能，包括数据的初始化和集成，把数据初始化放到这里，这样来集成各处的代码，这样便于汇总
+    # 现在先把normal状态下的参数调通再说
     def __init__(self, conf, choice,node_id):
-        self.conf = conf
-        self.node_id=node_id
+        self.conf = conf # 配置文档
+        self.node_id=node_id # 区别用的id
 
         if choice == 2:
+            # 对于同态加密这一块目前还没有实现多机通信
             pca = PCA(n_components=30)
-
-            self.train_datasets, self.eval_datasets = datasets2.get_dataset("data/", self.conf["type"])
+            self.train_datasets, self.eval_datasets = datasets2.get_dataset(self.conf["data_path"], self.conf["type"])
             self.train_datasets = (
-            pca.fit_transform(self.train_datasets.data.reshape(self.train_datasets.data.shape[0], -1)),
-            np.array(self.train_datasets.targets))
+                pca.fit_transform(self.train_datasets.data.reshape(self.train_datasets.data.shape[0], -1)),
+                np.array(self.train_datasets.targets))
             self.eval_datasets = (
-            pca.fit_transform(self.eval_datasets.data.reshape(self.eval_datasets.data.shape[0], -1)),
-            np.array(self.eval_datasets.targets))
+                pca.fit_transform(self.eval_datasets.data.reshape(self.eval_datasets.data.shape[0], -1)),
+                np.array(self.eval_datasets.targets))
             self.server = Server(self.conf, self.eval_datasets, choice)
         elif choice == 5:
-            self.dataset_path = "weight_share_protect/UDK_fl_add_mul_sort"
+            # 贡献权重部分
+            self.dataset_path = "weight_share_protect/UDK_fl_add_mul_sort2/mul10_user_number_2"
             self.global_testloader = torch.utils.data.DataLoader(
                 Mydataset_numpy_server_UDK(mode='test', dataset=self.dataset_path),
                 batch_size=self.conf["batch_size"], shuffle=True, num_workers=8, pin_memory=True)
             self.server = Server(self.conf, self.global_testloader, choice)
 
-
         else:
-            self.train_datasets, self.eval_datasets = datasets2.get_dataset("data/", self.conf["type"], choice,subset_size=1000)
+            self.train_datasets, self.eval_datasets = datasets2.get_dataset(self.conf["data_path"], self.conf["type"], choice,subsize_rate=self.conf["subsize_rate"])
             self.server = Server(self.conf, self.eval_datasets, choice)
+            # 获取eval_dataloader
+            self.eval_loader = torch.utils.data.DataLoader(self.eval_datasets, batch_size=self.conf["batch_size"],shuffle=True)
 
-            self.eval_loader = torch.utils.data.DataLoader(self.eval_datasets, batch_size=self.conf["batch_size"],
-                                                           shuffle=True)
         self.clients = []
         self.accs = []
         self.losses = []
 
+    # 基础功能部分
+    # 启动服务器
     def start_server(self):
         '''细节：这里一定是要创建一个函数'''
         self.server.start_server()
@@ -72,6 +65,7 @@ class Train(object):
         self.accs = self.server.accs
         self.losses = self.server.losses
 
+    # 启动正常状态下的norm_train
     def norm_train_start_client(self):
         '''
         直接实例化client端口，结合flower框架自动实现模型本地训练，中央服务器聚合
@@ -88,8 +82,7 @@ class Train(object):
         self.accs = self.server.accs
         self.losses = self.server.losses
 
-        # print("results:",self.eval(model_path))
-
+    # 启动差分隐私状态下的train
     def start_differential_privacy_train(self):
         # 实例化客户端
         client = Differential_Privacy_Client(self.conf, self.server.global_model, self.train_datasets, self.eval_datasets, self.node_id)
@@ -102,8 +95,7 @@ class Train(object):
         self.accs = self.server.accs
         self.losses = self.server.losses
 
-        # print("results:", self.eval(model_path))
-
+    # 启动同态加密，不过同态加密由于太难了，这里实现的是本地运行的版本
     def start_homomorphic_encryption_train(self):
         #这里需要注意一下，跟原来是一样的
         train_size = self.train_datasets[0].shape[0]
@@ -145,6 +137,7 @@ class Train(object):
 
             # print("Epoch %d, acc: %f\n" % (e, acc))
 
+    # 实现负数据库下的train
     def start_xndb_train(self):
         # 实例化客户端
         client = XNDB_Client(self.conf, self.server.global_model, self.train_datasets,
@@ -158,8 +151,7 @@ class Train(object):
         self.accs = self.server.accs
         self.losses = self.server.losses
 
-        # print("results:", self.eval(model_path))
-
+    # 实现改进gan下的train
     def start_pputl_client_train(self,G):
         train_dataset_size = len(self.train_datasets)
         client=PPUTL_Client(self.conf, self.server.global_model, G, train_dataset_size, self.train_datasets,self.eval_datasets, self.node_id)
@@ -173,8 +165,7 @@ class Train(object):
         self.accs = self.server.accs
         self.losses = self.server.losses
 
-        # print("results:", self.eval(model_path))
-
+    # 实现共享权重下的train
     def start_weight_share_protect_train(self):
         trainloader = torch.utils.data.DataLoader(
             Mydataset_numpy_client_UDK(mode='train', dataset=self.dataset_path, conf=self.conf, ID=4),
@@ -190,62 +181,15 @@ class Train(object):
         self.accs = self.server.accs
         self.losses = self.server.losses
 
-    def predict(self,model_path,pchoice,image_path=None,save_path=None):
 
-        if  pchoice==1:
-            #表示我只想要做评估，用自己已有的eval_dataloader做评估
-            acc,loss=utils.eval(model_path,self.eval_loader)
-            return acc,loss
-
-        elif pchoice==2:
-            accuracy, average_loss, images, predicted_labels,true_labels,images_name=utils.predict_and_evaluate(model_path,dataset_folder='./data/cifar10_png')
-            utils.show_images(images,true_labels,predicted_labels, 25)
-
-            if save_path:
-                if not os.path.exists(directory):
-                    os.makedirs(directory)
-                # 将列表转换为字典
-                data_dict = dict(zip(images_name, predicted_labels))
-
-                # 保存为 JSON 文件
-                with open(save_path, 'w') as f:
-                    json.dump(data_dict, f)
-
-            return accuracy,average_loss
-
-        elif pchoice==3:
-            if not image_path:
-                print("请输入你的图片的位置")
-            predict_label,image,true_label=utils.predict_image(image_path=image_path,model_path=model_path)
-            utils.show_image(image, predict_label,true_label)
-            return predict_label
+    # 测试模型accuracy和loss , 模型预测部分，有不同的预测方法
+    def model_eval(self,model_path):
+        if self.conf["type"] in uu.diseases:
+            acc,loss=uu.eval_diseases(model_path,self.eval_loader)
+            return acc, loss
+        acc, loss = uu.eval(model_path, self.eval_loader)
+        return acc, loss
 
 
-
-def main():
-    """Load data, start CifarClient."""
-    conf = {"model_name": "resnet50", "no_models": 3, "type": "cifar", "global_epochs": 3, "local_epochs": 3, "k": 3,
-            "batch_size": 8, "client_batchsize": 100, "global_batchsize": 500, "lr": 0.1, "momentum": 0.9,
-            "lambda": 0.1,"dp": True, "C": 1000, "sigma": 0.01, "q": 0.2, "W": 2, "feature_num": 30, "eta": 2, "alpha": 1.0,
-            "poison_label": 2, "poisoning_per_batch": 4, "prop": 0.6, "root": "ndb_cifar10_data/","address":"127.0.0.1:8080",
-            "min_available_clients":2,
-            }
-    parser = argparse.ArgumentParser(description="Flower")
-    parser.add_argument("--node-id", type=int, default=0, choices=range(0, 10))
-    parser.add_argument("--choice",type=int,default=-1,choices=range(-1,5))
-    args = parser.parse_args()
-    trainers=Train(conf,choice=args.choice)
-    if args.choice==-1:
-        trainers.start_server()
-    elif args.choice==0:
-        trainers.norm_train_start_client()
-    else:
-        pass
-
-
-if __name__ == "__main__":
-    main()
-
-    print('正常运行')
 
 
