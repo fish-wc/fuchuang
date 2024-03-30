@@ -17,6 +17,7 @@ diseases=["PathMNIST","DermaMNIST","OCTMNIST","PneumoniaMNIST","RetinaMNIST","Br
     "BloodMNIST","TissueMNIST","OrganAMNIST","ChestMNIST"]
 
 def eval(model_path,eval_loader):
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     # 读出模型
     model=msl.load_model(model_path)
     # 将模型设置为评估模式，这对于推理很重要
@@ -29,8 +30,14 @@ def eval(model_path,eval_loader):
         dataset_size += data.size()[0]
 
         if torch.cuda.is_available():
+            # 我在如下加入一个判断语句，这样可以将两个函数合并为一个函数，极大的缩
+            # if type in diseases:
+            #     data = data.cuda()
+            #     target = target.to(device).squeeze(1)
+            #     target = target.long()
+            # else:
             data = data.cuda()
-            target = target.cuda()
+            target = target.cuda() # 这里的差别是两处eval唯一的差别
 
         output = model(data)
 
@@ -44,6 +51,7 @@ def eval(model_path,eval_loader):
 
     return acc, total_l
 
+# 如下这个函数部分可以考虑舍弃
 def eval_diseases(model_path,eval_loader):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     # 读出模型
@@ -61,8 +69,8 @@ def eval_diseases(model_path,eval_loader):
         if torch.cuda.is_available():
             data = data.cuda()
             target = target.to(device).squeeze(1)
+            target=target.long()
 
-        target.squeeze(1)
         output = model(data)
 
         total_loss += torch.nn.functional.cross_entropy(output, target,
@@ -117,7 +125,7 @@ def load_images_from_folder(folder):
 
     return images, labels,images_name
 
-# 注意: 你需要确保 load_images_from_folder 函数能够正确运行并返回images和true_labels
+# 注意: 需要确保 load_images_from_folder 函数能够正确运行并返回images和true_labels
 def predict_and_evaluate(model_path, dataset_folder):
     model= msl.load_model(model_path)
     model.eval()  # 将模型设置为评估模式

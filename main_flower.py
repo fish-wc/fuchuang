@@ -81,14 +81,13 @@ if __name__ == '__main__':
     parser.add_argument('--subsize_rate',type=float,default=0.05,help='subsize data rate')
     args = parser.parse_args()
     '''
-    数据集type选择种类：'cifar'，'mnist'，"PathMNIST"，"DermaMNIST"，"OCTMNIST"，"PneumoniaMNIST"，"RetinaMNIST"，"BreastMNIST"
-    "BloodMNIST"，"TissueMNIST"，"OrganAMNIST"，"ChestMNIST" 欧阳说有两个数据集还没弄，忘记是哪两个了
+    数据集type选择种类：'cifar'，'mnist'，"PathMNIST"，"DermaMNIST"，"OCTMNIST"，"PneumoniaMNIST"，"RetinaMNIST"，
+    "TissueMNIST"，"OrganAMNIST" 说明：有两个数据集没有弄好，"BreastMNIST"，"BloodMNIST"测试不通过。"ChestMNIST"，minst数据集这两个数据集个没有训练。
     '''#数据集type的可选项有整整12个
 
     # 选择保护算法
     # 改进的生成
     print("正常模式输入0；差分隐私输入1；同态加密输入2:负数据库输入3;改进的生成对抗网络输入4;共享权重模式协作学习输入5;其他功能6:")
-    classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
     choice = args.choice
     pchoice=args.pchoice
     node_id=args.node_id
@@ -105,9 +104,51 @@ if __name__ == '__main__':
             "pchoice":args.pchoice,"save_json":args.save_json,"data_path":args.data_path,
             "subsize_rate":args.subsize_rate,"model_save_path":args.model_save_path,"model_save_name":args.model_save_name,
             }
+
     # model_path="./mymodel/resnet50.pth" # 这个部分需要自己传
-    conf["type"]="OrganAMNIST"
-    conf["increment"] = "./model_jishe/model_result_OrganAMNIST.pth"
+
+    # 测试方案，通过调整conf["type"]和conf["increment"]两个参数来调整数据类型，和与训练好的模型参数。证明有八个数据集能正常运行，有两个不能正常运行。
+    '''
+    # 测试通过
+    # conf["type"]="OrganAMNIST"
+    # conf["increment"] = "./model_jishe/model_result_OrganAMNIST.pth"
+    # 测试通过
+    # conf["type"] = "PathMNIST"
+    # conf["increment"] = "./model_jishe/model_result_PathMNIST.pth"
+
+    # 测试通过
+    # conf["type"] = "DermaMNIST"
+    # conf["increment"] = "./model_jishe/model_result_DermaMNIST.pth"
+
+    # 测试通过
+    # conf["type"] = "OCTMNIST"
+    # conf["increment"] = "./model_jishe/model_result_OCTMNIST.pth"
+
+    # 测试通过
+    # conf["type"] = "PneumoniaMNIST"
+    # conf["increment"] = "./model_jishe/model_result_PneumoniaMNIST.pth"
+
+    # 测试通过，但是该数据的准确率不高
+    # conf["type"] = "RetinaMNIST"
+    # conf["increment"] = "./model_jishe/model_result_RetinaMNIST.pth"
+
+    # xxxx测试不通过，目前还不知道是什么原因
+    # conf["type"] = "BreastMNIST"
+    # conf["increment"] = "./model_jishe/model_result_BreastMNIST.pth"
+
+    # XXXX测试不通过，不明原因
+    # conf["type"] = "BloodMNIST"
+    # conf["increment"] = "./model_jishe/model_result_BloodMNIST.pth"
+
+    #测试通过
+    # conf["type"] = "TissueMNIST"
+    # conf["increment"] = "./model_jishe/model_result_TissueMNIST.pth"
+    
+    # 测试通过
+    # conf["type"] = "TissueMNIST"
+    # conf["increment"] = "./model_jishe/model_result_TissueMNIST.pth"
+    '''
+
 
     trainer = Train(conf, choice,node_id)
     print("start training!")
@@ -195,7 +236,7 @@ if __name__ == '__main__':
             predict_label,image,true_label=uu.predict_image(image_path=one_image_path,model_path=model_path)
             # 打印一张图的那种
             uu.show_image(image,predict_label,true_label,"showOneImage")
-            name=classes[predict_label]
+            name=uu.classes[predict_label]
             print(f"该图片的预测结果是{name},label({predict_label})")
 
         elif pchoice==4:

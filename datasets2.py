@@ -82,55 +82,6 @@ def get_dataset(dir, name, choice=None, subset_size=None,subsize_rate=None):
             train_dataset = datasets.CIFAR10(dir, train=True, download=True, transform=transform_train)
             eval_dataset = datasets.CIFAR10(dir, train=False, transform=transform_test)
 
-        if subsize_rate is not None:
-            train_size = len(train_dataset)  # 或 eval_dataset
-            eval_size = len(eval_dataset)
-
-            # 生成一个从0到 total_size-1 的索引列表
-            indices_train = list(range(train_size))
-            indices_eval = list(range(eval_size))
-
-            # # 随机打乱索引
-            random.shuffle(indices_train)
-            random.shuffle(indices_eval)
-
-            subset_size_train = int(train_size * subsize_rate)
-            subset_size_eval = int(eval_size * subsize_rate)
-
-            # 从打乱的索引中取出前 subset_size 个创建子数据集
-            train_subset_indices = indices_train[:subset_size_train]
-            eval_subset_indices = indices_eval[:subset_size_eval]
-
-            # 创建子数据集
-            train_dataset = Subset(train_dataset, train_subset_indices)
-            eval_dataset = Subset(eval_dataset, eval_subset_indices)
-
-            return train_dataset, eval_dataset
-
-        if subset_size is not None:
-            # 假设 total_size 是原始数据集的大小
-            train_size = len(train_dataset)  # 或 eval_dataset
-            eval_size = len(eval_dataset)
-
-            # 生成一个从0到 total_size-1 的索引列表
-            indices_train = list(range(train_size))
-            indices_eval = list(range(eval_size))
-
-            # # 随机打乱索引
-            # random.shuffle(indices_train)
-            # random.shuffle(indices_eval)
-
-            # 从打乱的索引中取出前 subset_size 个创建子数据集
-            train_subset_indices = indices_train[:subset_size]
-            eval_subset_indices = indices_eval[:subset_size]
-
-            # 创建子数据集
-            train_dataset = Subset(train_dataset, train_subset_indices)
-            eval_dataset = Subset(eval_dataset, eval_subset_indices)
-
-            return train_dataset, eval_dataset
-
-
     # 如下是本次的辅助数据集，手写数字识别mnist数据集
     elif name == 'mnist':
         train_dataset = datasets.MNIST(dir, train=True, download=True, transform=transforms.ToTensor())
@@ -148,42 +99,89 @@ def get_dataset(dir, name, choice=None, subset_size=None,subsize_rate=None):
         eval_dataset= PathMNIST(split='test', root="./data/medmnist_total",transform=transform, download=True)
 
     elif name=="DermaMNIST":
-        train_dataset = DermaMNIST(split='train', root="./data/medmnist_total", download=True)
-        eval_dataset = DermaMNIST(split='test', root="./data/medmnist_total", download=True)
+        train_dataset = DermaMNIST(split='train', root="./data/medmnist_total",transform=transform, download=True)
+        eval_dataset = DermaMNIST(split='test', root="./data/medmnist_total", transform=transform,download=True)
 
     elif name=="OCTMNIST":
-        train_dataset = OCTMNIST(split='train', root="./data/medmnist_total", download=True)
-        eval_dataset = OCTMNIST(split='test', root="./data/medmnist_total", download=True)
+        train_dataset = OCTMNIST(split='train', root="./data/medmnist_total",transform=transform, download=True)
+        eval_dataset = OCTMNIST(split='test', root="./data/medmnist_total", transform=transform,download=True)
 
     elif name=="PneumoniaMNIST":
-        train_dataset = PneumoniaMNIST(split='train', root="./data/medmnist_total", download=True)
-        eval_dataset = PneumoniaMNIST(split='test', root="./data/medmnist_total", download=True)
+        train_dataset = PneumoniaMNIST(split='train', root="./data/medmnist_total",transform=transform, download=True)
+        eval_dataset = PneumoniaMNIST(split='test', root="./data/medmnist_total", transform=transform,download=True)
 
     elif name=="RetinaMNIST":
-        train_dataset = RetinaMNIST(split='train', root="./data/medmnist_total", download=True)
-        eval_dataset =  RetinaMNIST(split='test', root="./data/medmnist_total", download=True)
+        train_dataset = RetinaMNIST(split='train', root="./data/medmnist_total", transform=transform,download=True)
+        eval_dataset =  RetinaMNIST(split='test', root="./data/medmnist_total", transform=transform,download=True)
 
     elif name=="BreastMNIST":
-        train_dataset =BreastMNIST(split='train', root="./data/medmnist_total", download=True)
-        eval_dataset = BreastMNIST(split='test', root="./data/medmnist_total", download=True)
+        train_dataset =BreastMNIST(split='train', root="./data/medmnist_total", transform=transform,download=True)
+        eval_dataset = BreastMNIST(split='test', root="./data/medmnist_total", transform=transform,download=True)
 
     elif name=="BloodMNIST":
-        train_dataset = BloodMNIST(split='train', root="./data/medmnist_total", download=True)
-        eval_dataset = BloodMNIST(split='test', root="./data/medmnist_total", download=True)
+        train_dataset = BloodMNIST(split='train', root="./data/medmnist_total",transform=transform, download=True)
+        eval_dataset = BloodMNIST(split='test', root="./data/medmnist_total", transform=transform,download=True)
 
     elif name=="TissueMNIST":
-        train_dataset =TissueMNIST(split='train', root="./data/medmnist_total", download=True)
-        eval_dataset = TissueMNIST(split='test', root="./data/medmnist_total", download=True)
+        train_dataset =TissueMNIST(split='train', root="./data/medmnist_total", transform=transform,download=True)
+        eval_dataset = TissueMNIST(split='test', root="./data/medmnist_total", transform=transform,download=True)
 
     elif name=="OrganAMNIST":
         train_dataset = OrganAMNIST(split='train', root="./data/medmnist_total", transform=transform,download=True)
         eval_dataset = OrganAMNIST(split='test', root="./data/medmnist_total",transform=transform, download=True)
 
     elif name=="ChestMNIST":
-        train_dataset =ChestMNIST(split='train', root="./data/medmnist_total", download=True)
-        eval_dataset = ChestMNIST(split='test', root="./data/medmnist_total", download=True)
+        train_dataset =ChestMNIST(split='train', root="./data/medmnist_total",transform=transform, download=True)
+        eval_dataset = ChestMNIST(split='test', root="./data/medmnist_total", transform=transform,download=True)
 
-    return train_dataset, eval_dataset
+    if subsize_rate is not None:
+        train_size = len(train_dataset)  # 或 eval_dataset
+        eval_size = len(eval_dataset)
+
+        # 生成一个从0到 total_size-1 的索引列表
+        indices_train = list(range(train_size))
+        indices_eval = list(range(eval_size))
+
+        # # 随机打乱索引
+        random.shuffle(indices_train)
+        random.shuffle(indices_eval)
+
+        subset_size_train = int(train_size * subsize_rate)
+        subset_size_eval = int(eval_size * subsize_rate)
+
+        # 从打乱的索引中取出前 subset_size 个创建子数据集
+        train_subset_indices = indices_train[:subset_size_train]
+        eval_subset_indices = indices_eval[:subset_size_eval]
+
+        # 创建子数据集
+        train_dataset = Subset(train_dataset, train_subset_indices)
+        eval_dataset = Subset(eval_dataset, eval_subset_indices)
+
+        return train_dataset, eval_dataset
+
+    if subset_size is not None:
+        # 假设 total_size 是原始数据集的大小
+        train_size = len(train_dataset)  # 或 eval_dataset
+        eval_size = len(eval_dataset)
+
+        # 生成一个从0到 total_size-1 的索引列表
+        indices_train = list(range(train_size))
+        indices_eval = list(range(eval_size))
+
+        # # 随机打乱索引
+        # random.shuffle(indices_train)
+        # random.shuffle(indices_eval)
+
+        # 从打乱的索引中取出前 subset_size 个创建子数据集
+        train_subset_indices = indices_train[:subset_size]
+        eval_subset_indices = indices_eval[:subset_size]
+
+        # 创建子数据集
+        train_dataset = Subset(train_dataset, train_subset_indices)
+        eval_dataset = Subset(eval_dataset, eval_subset_indices)
+
+        return train_dataset, eval_dataset
+
 
 # transform_train
 # RandomCrop(32, padding=4): 这个转换首先对图像周围添加4个像素的填充（默认填充模式是零填充），然后随机裁剪出一个32x32像素的区域。这种类型的随机裁剪是一种数据增强技术，有助于减少模型对图像位置的依赖。
