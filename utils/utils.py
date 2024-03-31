@@ -135,6 +135,7 @@ def predict_and_evaluate(model_path, dataset_folder):
     transform = transforms.Compose([
         transforms.Resize((32, 32)),
         transforms.ToTensor(),
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
     ])
 
     # 初始化损失函数
@@ -144,16 +145,22 @@ def predict_and_evaluate(model_path, dataset_folder):
     total_loss = 0.0
     predicted_labels = []  # 用于存储预测标签
 
+    device="cuda" if torch.cuda.is_available() else "cpu"
+
     with torch.no_grad():  # 关闭梯度计算
         for img, label in zip(images, true_labels):
             img_t = transform(img).unsqueeze(0)
+
+
+            img_t=img_t.to(device) #需要将其转换到cuda上。细节：这里返回对象，所以需要修改。
+
             output = model(img_t)
             _, predicted = torch.max(output, 1)
             correct += (predicted.item() == label)
             predicted_labels.append(predicted.item())
 
             # 计算损失
-            loss = criterion(output, torch.tensor([label]))
+            loss = criterion(output, torch.tensor([label],device=device))
             total_loss += loss.item()
 
     accuracy = (correct / len(images)) * 100
@@ -221,9 +228,10 @@ def predict_image(image_path, model_path):
     transform = transforms.Compose([
         transforms.Resize((32, 32)),  # 调整图像大小以匹配模型输入
         transforms.ToTensor(),  # 转换为张量
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # 归一化
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
     ])
 
+    device="cuda" if torch.cuda.is_available() else "cpu"
 
     # 加载图像,读取图像，进行预测，并显示结果
     img = Image.open(image_path).convert('RGB')
@@ -231,6 +239,7 @@ def predict_image(image_path, model_path):
     # 图像预处理
     img_t = transform(img)
     img_t = img_t.unsqueeze(0)  # 添加批次维度
+    img_t=img_t.to(device)
 
     # 预测
     with torch.no_grad():
@@ -272,7 +281,7 @@ def plot_category(save_name,values,extension='.png'):
     plt.bar(classes, category_counts, color='skyblue')
     plt.xlabel('Category')
     plt.ylabel('Count')
-    plt.title('Count of Each Category in CIFAR-10 Prediction')
+    plt.title(f'Count of Each Category in {save_name} Prediction')
     plt.xticks(classes, ['plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck'])
     save_base="./figures/showFigure"
     save_name=save_name+extension
@@ -281,4 +290,5 @@ def plot_category(save_name,values,extension='.png'):
     plt.show()
 
 if __name__=='__main__':
+
     pass

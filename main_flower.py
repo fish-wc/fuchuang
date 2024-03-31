@@ -1,34 +1,17 @@
-
-import json
-import argparse
-from plot_acc import *
-import warnings
-from pputl_demo import pputl
-from xor_and_ndb import xor, ndb
-from weight_share_protect.matrix_add_mul_sort_transform_using_different_key import matrix_add_mul_sort
-from pputl_demo.target_model import *
-
-
+# 自己集成的内容
 from trainer_flower import *
-import json
-import argparse
 from plot_acc import *
-import warnings
 from pputl_demo import pputl
-from xor_and_ndb import xor,ndb
-from weight_share_protect.matrix_add_mul_sort_transform_using_different_key import matrix_add_mul_sort
 from pputl_demo.target_model import *
-warnings.filterwarnings("ignore", category=UserWarning)
 import utils.utils as uu
-
-warnings.filterwarnings("ignore", category=UserWarning)
-
-import os
 import myopenai as mo
 
+# 导入功能性包
+import argparse
+import os
 
+warnings.filterwarnings("ignore", category=UserWarning)
 
-# 修改了
 if __name__ == '__main__':
 
     # 预置超参数
@@ -106,7 +89,6 @@ if __name__ == '__main__':
             }
 
     # model_path="./mymodel/resnet50.pth" # 这个部分需要自己传
-
     # 测试方案，通过调整conf["type"]和conf["increment"]两个参数来调整数据类型，和与训练好的模型参数。证明有八个数据集能正常运行，有两个不能正常运行。
     '''
     # 测试通过
@@ -217,7 +199,7 @@ if __name__ == '__main__':
             save_path=conf["save_json"]
             # 可以下载json文件，还可以绘制图。
             # 这里是预测结果
-            accuracy, average_loss, images, predicted_labels, true_labels, images_name = uu.predict_and_evaluate(model_path, dataset_folder='./data/cifar10_png')
+            accuracy, average_loss, images, predicted_labels, true_labels, images_name = uu.predict_and_evaluate(model_path, dataset_folder='./data_small/cifar10_png')
             # 这里是展示结果
             uu.show_images(images, true_labels, predicted_labels, 25,save_name='show_images')
             # 这里将返回的结果保存为json
@@ -231,7 +213,7 @@ if __name__ == '__main__':
 
         elif pchoice==3:
             # 这里是只放一个图片的情况,放了一张
-            one_image_path='./data/cifar10_png/0/52.png'
+            one_image_path='./data/cifar10_png/0/111.png'
             # 首先来做预测
             predict_label,image,true_label=uu.predict_image(image_path=one_image_path,model_path=model_path)
             # 打印一张图的那种

@@ -21,8 +21,23 @@ import json
 from flask_socketio import emit
 
 
+# 自己集成的内容
+from trainer_flower import *
+from plot_acc import *
+from pputl_demo import pputl
+from pputl_demo.target_model import *
+import utils.utils as uu
+import myopenai as mo
+
+import os
+
+# 选择保护算法
+# 改进的生成
+
+
 @socketio.on('attack')
 def attack(data_1):
+
     data = data_1['params']
     attack_type = data['attack_type']
     choice = data['choice']
@@ -32,7 +47,7 @@ def attack(data_1):
 
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding='utf-8')
 
-    count = 0;
+    count = 0
     emit('attack_output', {'output': "开始训练......"})
     for line in process.stdout:
         count = count + 1
@@ -75,7 +90,7 @@ def attack(data_1):
 # @socketio.on('attack')
 # def attack(data_1):
 #     data = data_1['params']
-#     attack_type = data['attack_type']
+#     attack_type = data['attack_type']3
 #     choice = data['choice']
 #     result = {}
 #
@@ -109,6 +124,30 @@ def attack(data_1):
 
 @socketio.on('train')
 def train(data_1):
+    print("在这里")
+    print("正常模式输入0；差分隐私输入1；同态加密输入2:负数据库输入3;改进的生成对抗网络输入4;共享权重模式协作学习输入5;其他功能6:")
+
+    conf = {"choice": 6, "no_models": 3, "model_name": "resnet50", "type": "cifar",
+            "global_epochs": 5, "local_epochs": 3, "k": 3, "batch_size": 100, "lr": 0.1,
+            "momentum": 0.9, "lambda_": 0.1, "dp": True, "C": 1000, "sigma": 0.01,
+            "q": 0.2, "w": 2, "feature_num": 30, "eta": 2, "alpha": 1.0, "poison_label": 2,
+            "poisoning_per_batch": 4, "prop": 0.6, "root": "ndb_cifar10_data",
+            "address": "127.0.0.1:8000", "min_available_clients": 2, "node_id": 10,
+            "value_steps": 5, "increment": "./mymodel/resnet50.pth", "is_increment": True,
+            "pchoice": 1, "save_json": "./data/answer.json", "data_path": "./data/",
+            "subsize_rate": 0.05, "model_save_path": "./mymodel",
+            "model_save_name": "test",
+            }
+    choice = conf["choice"]
+    node_id = conf["node_id"]
+
+    trainer = Train(conf, choice, node_id)
+    if data_1:
+        print('接收到指令了')
+        model_path = conf["increment"]
+        acc, loss = trainer.model_eval(model_path)
+        print("accuracy:", acc, "loss:", loss)
+
     print(data_1)
     data = data_1['params']
     choice = data['choice']
@@ -259,4 +298,6 @@ def train(data_1):
 
 
 if __name__ == '__main__':
+
+    print("后端启动")
     socketio.run(app, debug=True, allow_unsafe_werkzeug=True, port=5000)
